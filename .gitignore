@@ -9,7 +9,7 @@ __pycache__/
 *.so
 
 # Pycharm stuff
-.idea
+.idea/
 
 # Distribution / packaging
 .Python
