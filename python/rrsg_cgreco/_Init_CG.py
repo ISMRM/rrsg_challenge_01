@@ -102,7 +102,7 @@ def _prepareData(path, acc):
          If no data file is specified
     '''
 
-    if args.data == '':
+    if path == '':
         raise ValueError("No data file specified")
 
     name = os.path.normpath(path)
@@ -110,35 +110,30 @@ def _prepareData(path, acc):
     h5_dataset_rawdata_name = 'rawdata'
     h5_dataset_trajectory_name = 'trajectory'
 
-    if "heart" in args.data:
-        if args.acc == 2:
-            R = 33
+    if "heart" in name:
+        if acc == 2:
             trajectory = h5_dataset.get(h5_dataset_trajectory_name)[
                 :, :, :33]
             rawdata = h5_dataset.get(h5_dataset_rawdata_name)[
                 :, :, :33, :]
-        elif args.acc == 3:
-            R = 22
+        elif acc == 3:
             trajectory = h5_dataset.get(h5_dataset_trajectory_name)[
                 :, :, :22]
             rawdata = h5_dataset.get(h5_dataset_rawdata_name)[
                 :, :, :22, :]
-        elif args.acc == 4:
-            R = 11
+        elif acc == 4:
             trajectory = h5_dataset.get(h5_dataset_trajectory_name)[
                 :, :, :11]
             rawdata = h5_dataset.get(h5_dataset_rawdata_name)[
                 :, :, :11, :]
         else:
-            R = 55
             trajectory = h5_dataset.get(h5_dataset_trajectory_name)[...]
             rawdata = h5_dataset.get(h5_dataset_rawdata_name)[...]
     else:
-        R = args.acc
         trajectory = h5_dataset.get(h5_dataset_trajectory_name)[
-            :, :, ::R]
+            :, :, ::acc]
         rawdata = h5_dataset.get(h5_dataset_rawdata_name)[
-            :, :, ::R, :]
+            :, :, ::acc, :]
 
     # Squeeze dummy dimension and transpose to C-style ordering.
     rawdata = np.squeeze(rawdata.T)
@@ -154,7 +149,7 @@ def _prepareData(path, acc):
     return (rawdata, trajectory)
 
 
-def _setupParamterDict(rawdata, ogf):
+def _setupParamterDict(rawdata, traj, ogf):
     '''
     Setup the parameter dict.
 
@@ -180,7 +175,7 @@ def _setupParamterDict(rawdata, ogf):
     # This needs to be adjusted for spirals!!!!!
     #############
     par["dcf"] = np.sqrt(np.array(goldcomp.cmp(
-                     par["traj"]), dtype=DTYPE_real)).astype(DTYPE_real)
+                     traj), dtype=DTYPE_real)).astype(DTYPE_real)
     par["dcf"] = np.require(np.abs(par["dcf"]),
                             DTYPE_real, requirements='C')
 
@@ -229,7 +224,6 @@ def _run_reco(args):
 # Read Input data   ###########################################################
 ###############################################################################
     (rawdata, trajectory) = _prepareData(args.data, args.acc)
-
 ###############################################################################
 # Setup parameters #############################################
 ###############################################################################
