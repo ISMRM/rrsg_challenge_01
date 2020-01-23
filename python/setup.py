@@ -16,7 +16,7 @@ setup(name='rrsg_cgreco',
         'mako',
         'matplotlib'],
       entry_points={
-        'console_scripts': ['rrsg_cgreco = rrsg_cgreco._Init_CG:run'],
+        'console_scripts': ['rrsg_cgreco = rrsg_cgreco.recon:run'],
         },
       package_data={},
     include_package_data=True,
