@@ -56,7 +56,7 @@ def est_coils(data, trajectory, par):
     par_coils = {}
     par_coils["traj"] = traj_coil[None, ...]
     par_coils["dcf"] = dcf_coil
-    par_coils["N"] = par["nFE"]
+    par_coils["nFE"] = par["nFE"]
     par_coils["NScan"] = 1
     par_coils["NC"] = par["NC"]
     par_coils["NSlice"] = 1

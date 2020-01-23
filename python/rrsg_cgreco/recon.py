@@ -25,6 +25,8 @@ import h5py
 import argparse
 from rrsg_cgreco._helper_fun import goldcomp as goldcomp
 from rrsg_cgreco._helper_fun.est_coils import est_coils
+import rrsg_cgreco.linop as linop
+import rrsg_cgreco.solver as solver
 
 DTYPE = np.complex64
 DTYPE_real = np.float32
@@ -236,12 +238,15 @@ def _run_reco(args):
 ###############################################################################
     est_coils(rawdata, trajectory, par)
 ###############################################################################
-# generate nFFT  ##############################################################
+# generate Linear Operator  ###################################################
 ###############################################################################
-
+    MRImagingOperator = linop.MRIImagingModel(par, trajectory)
+    cgs = solver.CGReco(par)
+    cgs.setOperator(MRImagingOperator)
 ###############################################################################
 # Start Reco ##################################################################
 ###############################################################################
+    cgs.optimize(rawdata*np.sqrt(par["dcf"]))
 ###############################################################################
 # New .hdf5 save files ########################################################
 ###############################################################################
