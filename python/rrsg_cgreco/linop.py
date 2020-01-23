@@ -3,8 +3,8 @@
 """ This module holds the classes for different FFT operators.
 """
 import numpy as np
-from ._helper_fun.calckbkernel import calckbkernel
-from ._helper_fun.goldcomp import cmp as goldcomp
+from rrsg_cgreco._helper_fun.calckbkernel import calckbkernel
+from rrsg_cgreco._helper_fun.goldcomp import cmp as goldcomp
 from abc import ABC, abstractmethod
 import itertools
 
@@ -276,8 +276,8 @@ class NUFFT(Operator):
         for iscan, iproj, ismpl in itertools.product(range(self.NScan),
                                                      range(self.NProj),
                                                      range(self.NSmpl)):
-            kx = self.traj[iscan, iproj, ismpl].real
-            ky = self.traj[iscan, iproj, ismpl].imag
+            kx = self.traj[iscan, iproj, ismpl].imag
+            ky = self.traj[iscan, iproj, ismpl].real
 
             ixmin = int((kx-self.kwidth)*self.gridsize + gridcenter)
             ixmax = int((kx+self.kwidth)*self.gridsize + gridcenter) + 1
@@ -326,8 +326,8 @@ class NUFFT(Operator):
         for iscan, iproj, ismpl in itertools.product(range(self.NScan),
                                                      range(self.NProj),
                                                      range(self.NSmpl)):
-            kx = self.traj[iscan, iproj, ismpl].real
-            ky = self.traj[iscan, iproj, ismpl].imag
+            kx = self.traj[iscan, iproj, ismpl].imag
+            ky = self.traj[iscan, iproj, ismpl].real
 
             ixmin = int((kx-self.kwidth)*self.gridsize + gridcenter)
             ixmax = int((kx+self.kwidth)*self.gridsize + gridcenter) + 1

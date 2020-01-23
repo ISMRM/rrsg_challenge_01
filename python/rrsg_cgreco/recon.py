@@ -24,6 +24,7 @@ import os
 import h5py
 import argparse
 from rrsg_cgreco._helper_fun import goldcomp as goldcomp
+from rrsg_cgreco._helper_fun.est_coils import est_coils
 
 DTYPE = np.complex64
 DTYPE_real = np.float32
@@ -184,6 +185,8 @@ def _setupParamterDict(rawdata, traj, ogf):
     par["dimX"] = dimX
     par["nFE"] = nFE
     par["Nproj"] = nSpokes
+    par["NScan"] = 1
+    par["NSlice"] = 1
 
     return par
 
@@ -231,11 +234,11 @@ def _run_reco(args):
 ###############################################################################
 # Coil Sensitivity Estimation #################################################
 ###############################################################################
-
-
+    est_coils(rawdata, trajectory, par)
 ###############################################################################
 # generate nFFT  ##############################################################
 ###############################################################################
+
 ###############################################################################
 # Start Reco ##################################################################
 ###############################################################################
