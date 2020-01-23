@@ -21,7 +21,7 @@ limitations under the License.
 
 """
 import numpy as np
-from rrsg_cgreco._helper_fun.kb import kb
+from .._helper_fun.kb import kb
 # function [kern,kbu] = calckbkernel(kwidth,overgridfactor,klength)
 # Function calculates the appropriate Kaiser-Bessel kernel
 # for gridding, using the approach of Jackson et al.
