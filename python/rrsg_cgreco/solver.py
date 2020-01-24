@@ -46,7 +46,7 @@ class CGReco:
         self.operator = op
 
     def operator_lhs(self, inp):
-        return self.operator_rhs(self.operator.fwd(inp))
+        return self.operator_rhs(self.operator.fwd(inp[None, ...]))
 
     def operator_rhs(self, inp):
         return self.operator.adj(inp)
@@ -56,7 +56,7 @@ class CGReco:
 #   Call inner optimization ###################################################
 #   output: optimal value of x ################################################
 ###############################################################################
-    def optimize(self, data, guess=None, maxit=10, lambd=1e-3, tol=1e-5):
+    def optimize(self, data, guess=None, maxit=10, lambd=1e-8, tol=1e-5):
         if self.operator is None:
             print("Please set an Linear operator "
                   "using the SetOperator method.")
@@ -74,8 +74,8 @@ class CGReco:
         print("-"*80)
         print("Elapsed time: %f seconds" % (end))
         print("-"*80)
-        self.result = self.kspace_filter(result)
         print("done")
+        return result
 
 ###############################################################################
 #   Conjugate Gradient optimization ###########################################
