@@ -68,7 +68,6 @@ class CGReco:
         start = time.time()
         result = self.cg_solve(
           guess, data[None, :, None, ...], maxit, lambd, tol)
-        result = result/self.incor
         result[~np.isfinite(result)] = 0
         end = time.time()-start
         print("-"*80)
