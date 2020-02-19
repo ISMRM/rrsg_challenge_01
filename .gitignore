@@ -8,10 +8,9 @@ __pycache__/
 # C extensions
 *.so
 
-# Pycharm stuff
-.idea/
 
 # Distribution / packaging
+venv
 .Python
 build/
 develop-eggs/

@@ -22,13 +22,13 @@ limitations under the License.
 """
 import numpy as np
 import sys
-from rrsg_cgreco._helper_fun import nlinvns as nlinvns
-from rrsg_cgreco._helper_fun import goldcomp as goldcomp
-from rrsg_cgreco import linop
+from .._helper_fun import nlinvns as nlinvns
+from .._helper_fun import goldcomp as goldcomp
+from .. import linop
 
-# % Estimates sensitivities and complex image.
-# %(see Martin Uecker: Image reconstruction by regularized nonlinear
-# %inversion joint estimation of coil sensitivities and image content)
+# Estimates sensitivities and complex image.
+# (see Martin Uecker: Image reconstruction by regularized nonlinear
+# inversion joint estimation of coil sensitivities and image content)
 DTYPE = np.complex64
 DTYPE_real = np.float32
 

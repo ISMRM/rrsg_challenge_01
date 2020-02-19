@@ -13,6 +13,7 @@
 # % Biomedizinische NMR Forschungs GmbH am
 # % Max-Planck-Institut fuer biophysikalische Chemie
 # Adapted for Python by O. Maier
+
 import numpy as np
 import time
 import pyfftw
@@ -160,7 +161,6 @@ def derns(P, W, X0, DX):
 
 
 def derHns(P, W, X0, DK, realConstr):
-
     # print('derHns')
     K = nsIfft(P * DK)
 
