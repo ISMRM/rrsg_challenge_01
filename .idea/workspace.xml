@@ -2,14 +2,15 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="ac54a33a-4b6a-46e3-8fa9-a807c1a0c46d" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/rrsg_challenge_01.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/rrsg_challenge_01.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/_helper_fun/calckbkernel.py" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/_helper_fun/calckbkernel.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/_helper_fun/est_coils.py" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/_helper_fun/est_coils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/_helper_fun/nlinvns.py" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/_helper_fun/nlinvns.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/linop.py" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/linop.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/plot_results.py" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/plot_results.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/recon.py" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/recon.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/solver.py" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/solver.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/step_by_step_recon.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/step_by_step_recon.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/python/test/test_LinearDataOperator.py" beforeDir="false" afterPath="$PROJECT_DIR$/python/test/test_LinearDataOperator.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -54,7 +55,7 @@
       <updated>1559652298331</updated>
       <workItem from="1559652299649" duration="2067000" />
       <workItem from="1582021811026" duration="5201000" />
-      <workItem from="1582101194573" duration="2529000" />
+      <workItem from="1582101194573" duration="4714000" />
     </task>
     <servers />
   </component>
@@ -67,5 +68,9 @@
     </state>
     <state x="175" y="167" width="904" height="757" key="SettingsEditor/0.25.1920.1030@0.25.1920.1030" timestamp="1582103185894" />
     <state x="329" y="163" width="1022" height="734" key="SettingsEditor/0.25.3600.1000@0.25.3600.1000" timestamp="1582022900898" />
+    <state x="608" y="254" width="704" height="578" key="find.popup" timestamp="1582104102971">
+      <screen x="0" y="25" width="1920" height="1030" />
+    </state>
+    <state x="608" y="254" width="704" height="578" key="find.popup/0.25.1920.1030@0.25.1920.1030" timestamp="1582104102971" />
   </component>
 </project>

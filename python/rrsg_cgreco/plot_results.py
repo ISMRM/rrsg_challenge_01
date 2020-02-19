@@ -11,6 +11,7 @@ import matplotlib.gridspec as gridspec
 from matplotlib import rc
 import h5py
 import os
+
 rc('text', usetex=True)
 plt.close('all')
 

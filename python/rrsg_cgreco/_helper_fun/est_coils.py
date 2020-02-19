@@ -20,11 +20,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 """
+
 import numpy as np
 import sys
-from .._helper_fun import nlinvns as nlinvns
-from .._helper_fun import goldcomp as goldcomp
-from .. import linop
+from python.rrsg_cgreco._helper_fun import nlinvns
+from python.rrsg_cgreco._helper_fun import goldcomp
+from python.rrsg_cgreco import linop
 
 # Estimates sensitivities and complex image.
 # (see Martin Uecker: Image reconstruction by regularized nonlinear
@@ -33,10 +34,17 @@ DTYPE = np.complex64
 DTYPE_real = np.float32
 
 
-def est_coils(data, trajectory, par):
-    ###########################################################################
-    # Initiate parallel interface #############################################
-    ###########################################################################
+def estimate_coil_sensitivities(data, trajectory, par):
+    """
+
+    Args:
+        data:
+        trajectory:
+        par:
+
+    Returns:
+
+    """
     nlinvNewtonSteps = 6
     nlinvRealConstr = False
 

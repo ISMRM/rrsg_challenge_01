@@ -12,7 +12,7 @@ except ImportError:
     import unittest
 import numpy as np
 import h5py
-from rrsg_cgreco import linop
+from python.rrsg_cgreco import linop
 
 DTYPE = np.complex128
 DTYPE_real = np.float64

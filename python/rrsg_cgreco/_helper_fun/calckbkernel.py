@@ -23,7 +23,7 @@ limitations under the License.
 
 import warnings
 import numpy as np
-from .._helper_fun.kb import kb
+from python.rrsg_cgreco._helper_fun.kb import kb
 
 
 def calculate_keiser_bessel_kernel(kwidth, overgridfactor, G, klength=32):

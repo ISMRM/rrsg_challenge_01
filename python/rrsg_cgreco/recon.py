@@ -23,10 +23,10 @@ import numpy as np
 import os
 import h5py
 import argparse
-from rrsg_cgreco._helper_fun import goldcomp as goldcomp
-from rrsg_cgreco._helper_fun.est_coils import est_coils
-import rrsg_cgreco.linop as linop
-import rrsg_cgreco.solver as solver
+from python.rrsg_cgreco._helper_fun import goldcomp as goldcomp
+from python.rrsg_cgreco._helper_fun.est_coils import estimate_coil_sensitivities
+import python.rrsg_cgreco.linop as linop
+import python.rrsg_cgreco.solver as solver
 
 DTYPE = np.complex64
 DTYPE_real = np.float32
@@ -236,7 +236,7 @@ def _run_reco(args):
 ###############################################################################
 # Coil Sensitivity Estimation #################################################
 ###############################################################################
-    est_coils(rawdata, trajectory, par)
+    estimate_coil_sensitivities(rawdata, trajectory, par)
 ###############################################################################
 # generate Linear Operator  ###################################################
 ###############################################################################

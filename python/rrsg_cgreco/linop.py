@@ -3,8 +3,8 @@
 """ This module holds the classes for different FFT operators.
 """
 import numpy as np
-from rrsg_cgreco._helper_fun.calckbkernel import calckbkernel
-from rrsg_cgreco._helper_fun.goldcomp import cmp as goldcomp
+from python.rrsg_cgreco._helper_fun.calckbkernel import calculate_keiser_bessel_kernel
+from python.rrsg_cgreco._helper_fun.goldcomp import cmp as goldcomp
 from abc import ABC, abstractmethod
 import itertools
 
@@ -192,7 +192,7 @@ class NUFFT(Operator):
         super().__init__(par, DTYPE, DTYPE_real)
         self.ogf = par["nFE"]/par["dimX"]
 
-        (self.kerneltable, kerneltable_FT, u) = calckbkernel(
+        (self.kerneltable, kerneltable_FT, u) = calculate_keiser_bessel_kernel(
             kwidth, self.ogf, par["nFE"], klength)
 
         deapo = 1 / kerneltable_FT.astype(DTYPE_real)
