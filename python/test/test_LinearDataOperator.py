@@ -12,20 +12,20 @@ except ImportError:
     import unittest
 import numpy as np
 import h5py
-from python.rrsg_cgreco import linop
+from rrsg_cgreco import linop
 
 DTYPE = np.complex128
 DTYPE_real = np.float64
 
 
 def setupPar(par):
-    par["NScan"] = 1
-    par["NC"] = 5
-    par["NSlice"] = 1
+    par["num_scans"] = 1
+    par["num_coils"] = 5
+    par["num_slc"] = 1
     par["dimX"] = 256
     par["dimY"] = 256
-    par["Nproj"] = 34
-    par["N"] = 512
+    par["num_proj"] = 34
+    par["num_reads"] = 512
     file = h5py.File('./test/smalltest.h5')
 
     par["traj"] = file['real_traj'][()].astype(DTYPE) + \
@@ -48,17 +48,22 @@ class OperatorKspaceRadial(unittest.TestCase):
 
         self.op = linop.NUFFT(
             par,
+            par["traj"],
             DTYPE=DTYPE,
             DTYPE_real=DTYPE_real)
 
-        self.opinfwd = np.random.randn(par["NScan"], par["NC"], par["NSlice"],
+        self.opinfwd = np.random.randn(par["num_scans"], par["num_coils"],
+                                       par["num_slc"],
                                        par["dimY"], par["dimX"]) +\
-            1j * np.random.randn(par["NScan"], par["NC"], par["NSlice"],
+            1j * np.random.randn(par["num_scans"], par["num_coils"],
+                                 par["num_slc"],
                                  par["dimY"], par["dimX"])*0
-        self.opinadj = np.random.randn(par["NScan"], par["NC"], par["NSlice"],
-                                       par["Nproj"], par["N"]) +\
-            1j * np.random.randn(par["NScan"], par["NC"], par["NSlice"],
-                                 par["Nproj"], par["N"])*0
+        self.opinadj = np.random.randn(par["num_scans"], par["num_coils"],
+                                       par["num_slc"],
+                                       par["num_proj"], par["num_reads"]) +\
+            1j * np.random.randn(par["num_scans"], par["num_coils"],
+                                 par["num_slc"],
+                                 par["num_proj"], par["num_reads"])*0
 
         self.opinfwd = self.opinfwd.astype(DTYPE)
         self.opinadj = self.opinadj.astype(DTYPE)

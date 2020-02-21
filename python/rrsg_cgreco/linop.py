@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-""" This module holds the classes for different FFT operators.
-"""
+""" Linear operators for MRI image reconstruction."""
 import numpy as np
-from python.rrsg_cgreco._helper_fun.calckbkernel import calculate_keiser_bessel_kernel
-from python.rrsg_cgreco._helper_fun.goldcomp import cmp as goldcomp
+from rrsg_cgreco._helper_fun.calckbkernel import calculate_keiser_bessel_kernel
+from rrsg_cgreco._helper_fun.goldcomp import cmp as goldcomp
 from abc import ABC, abstractmethod
 import itertools
 
 
 class Operator(ABC):
-    """ Abstract base class for linear Operators used inp the optimization.
+    """
+    Abstract base class for linear Operators used in the optimization.
 
     This class serves as the base class for all linear operators used inp
     the varous optimization algorithms. it requires to implement a forward
@@ -18,19 +18,19 @@ class Operator(ABC):
 
     Attributes
     ----------
-      NScan ():
+      num_scans (int):
         Number of total measurements (Scans)
-      NC ():
+      num_coils (int):
         Number of complex coils
-      NSlice ():
+      num_slc (int):
         Number ofSlices
-      dimX ():
+      dimX (int):
         X dimension of the parameter maps
-      dimY ():
+      dimY (int):
         Y dimension of the parameter maps
-      N ():
+      N (int):
         N number of samples per readout
-      Nproj ():
+      num_proj (int):
         Number of readouts
       DTYPE (numpy.type):
         The complex value precision. Defaults to complex64
@@ -39,34 +39,35 @@ class Operator(ABC):
     """
 
     def __init__(self, par, DTYPE=np.complex64, DTYPE_real=np.float32):
-        """ Operator base constructor.
+        """
+        Operator base constructor.
 
         Args
         ----
           par (dict): A python dict containing the necessary information to
-            setup the object. Needs to contain the number of slices (NSlice),
-            number of scans (NScan), image dimensions (dimX, dimY), number of
-            coils (NC), sampling pos (N) and read outs (NProj)
-            a PyOpenCL queue (queue) and the complex coil
-            sensitivities (C).
+            setup the object. Needs to contain the number of slices (num_slc),
+            number of scans (num_scans), image dimensions (dimX, dimY),
+            number of coils (num_coils),
+            sampling pos (N) and read outs (num_proj).
           DTYPE (numpy.type):
             The complex value precision. Defaults to complex64
           DTYPE_real (numpy.type):
             The real value precision. Defaults to float32
         """
-        self.NSlice = par["NSlice"]
-        self.NScan = par["NScan"]
+        self.num_slc = par["num_slc"]
+        self.num_scans = par["num_scans"]
         self.dimX = par["dimX"]
         self.dimY = par["dimY"]
-        self.NSmpl = par["nFE"]
-        self.NC = par["NC"]
-        self.NProj = par["Nproj"]
+        self.num_reads = par["num_reads"]
+        self.num_coils = par["num_coils"]
+        self.num_proj = par["num_proj"]
         self.DTYPE = DTYPE
         self.DTYPE_real = DTYPE_real
 
     @abstractmethod
     def fwd(self, inp):
-        """ Apply operator from parameter space to measurement space.
+        """
+        Apply operator from parameter space to measurement space.
 
         Apply the linear operator from parameter space to measurement space
         If streamed operations are used the Numpy.Arrays are replaced
@@ -90,7 +91,8 @@ class Operator(ABC):
 
     @abstractmethod
     def adj(self, inp):
-        """ Apply operator from measurement space to parameter space.
+        """
+        Apply operator from measurement space to parameter space.
 
         Apply the linear operator from measurement space to parameter space.
         If streamed operations are used the Numpy.Arrays are replaced
@@ -114,7 +116,8 @@ class Operator(ABC):
 
 
 class NUFFT(Operator):
-    """ Non-uniform FFT object.
+    """
+    Non-uniform FFT object.
 
     This class performs the non-uniform FFT (NUFFT) operation. Linear
     erpolation of a sampled gridding kernel is used to regrid pos
@@ -124,36 +127,29 @@ class NUFFT(Operator):
     ----------
       traj (Numpy.Array):
         The comlex sampling trajectory
-      dcf (Numpy.Array):
+      dens_cor (Numpy.Array):
         The densitiy compenation function
       ogf (float):
         The overgriddingfactor for non-cartesian k-spaces.
-      fft_shape (tuple of s):
-        3 dimensional tuple. Dim 0 contas all Scans, Coils and Slices.
-        Dim 1 and 2 the overgridded image dimensions.
       fft_scale (float32):
         The scaling factor to achieve a good adjoness of the forward and
         backward FFT.
-      cl_kerneltable (PyOpenCL.Buffer):
-        The gridding lookup table as read only Buffer
-      cl_deapo (PyOpenCL.Buffer):
-        The deapodization lookup table as read only Buffer
-      par_fft ():
-        The number of parallel fft calls. Typically it iterates over the
-        Scans.
-      fft (gpyfft.fft.FFT):
-        The fft object created from gpyfft (A wrapper for clFFT). The object
-        is created only once an reused inp each iterations, iterationg over
-        all scans to keep the memory footpr low.
-      prg (PyOpenCL.Program):
-        The PyOpenCL.Program object containing the necessary kernels to
-        execute the linear Operator. This will be determined by the
-        factory and set after the object is created.
+      kerneltable (Numpy.Array):
+        The gridding lookup table
+      deapo (Numpy.Array):
+        The deapodization lookup table
+      nkrnlpts (int):
+        The number of points in the precomputed gridding kernel
+      gridsize (int):
+        The size of the grid to interpolate to
+      kwidth (float):
+        The half width of the kernel relative to the number of gridpoints
     """
 
     def __init__(
             self,
             par,
+            trajectory,
             kwidth=5,
             fft_dim=(
                 1,
@@ -161,54 +157,55 @@ class NUFFT(Operator):
             klength=2000,
             DTYPE=np.complex64,
             DTYPE_real=np.float32):
-        """ NUFFT object constructor.
+        """
+        NUFFT object constructor.
 
         Args
         ----
-          ctx (PyOpenCL.Context):
-            The context for the PyOpenCL computations.
-          queue (PyOpenCL.Queue):
-            The computation Queue for the PyOpenCL kernels.
           par (dict): A python dict containing the necessary information to
-            setup the object. Needs to contain the number of slices (NSlice),
-            number of scans (NScan), image dimensions (dimX, dimY), number of
-            coils (NC), sampling pos (N) and read outs (NProj)
-            a PyOpenCL queue (queue) and the complex coil
-            sensitivities (C).
-          kwidth ():
+            setup the object. Needs to contain the number of slices (num_slc),
+            number of scans (num_scans), image dimensions (dimX, dimY),
+            number of
+            coils (num_coils), sampling pos (N) and read outs (num_proj).
+          trajectory (numpy.array):
+            Complex trajectory information for kx/ky points.
+          kwidth (int):
             The width of the sampling kernel for regridding of non-uniform
             kspace samples.
-          klength ():
+          klength (int):
             The length of the kernel lookup table which samples the contineous
             gridding kernel.
-          fft_dim (tuple of s):
-            The dimensions which should be transformed. Defaults
-            to 1 and 2 corresponding the the last two of fft_dim.
           DTYPE (Numpy.Type):
             The comlex precission type. Currently complex64 is used.
           DTYPE_real (Numpy.Type):
             The real precission type. Currently float32 is used.
         """
         super().__init__(par, DTYPE, DTYPE_real)
-        self.ogf = par["nFE"]/par["dimX"]
+        self.ogf = par["num_reads"]/par["dimX"]
 
         (self.kerneltable, kerneltable_FT, u) = calculate_keiser_bessel_kernel(
-            kwidth, self.ogf, par["nFE"], klength)
+            kwidth, self.ogf, par["num_reads"], klength)
 
         deapo = 1 / kerneltable_FT.astype(DTYPE_real)
         self.deapo = np.outer(deapo, deapo)
 
-        dcf = np.sqrt(goldcomp(par["traj"]))
+        dens_cor = np.sqrt(goldcomp(trajectory))
 
-        self.dcf = dcf
-        self.traj = par["traj"]
+        self.dens_cor = dens_cor
+        self.traj = trajectory
 
         self.nkrnlpts = self.kerneltable.size
-        self.gridsize = par["nFE"]
+        self.gridsize = par["num_reads"]
         self.kwidth = (kwidth / 2)/self.gridsize
 
     def adj(self, inp):
-        """ Perform the inverse (adjo) NUFFT operation.
+        """
+        Perform the adjoint (inverse) NUFFT operation.
+
+        This functions performs the adjoint NUFFT operation. It consists of
+        gridding of the non-uniform sampled data to the cartesian grid followed
+        by a 2D fft, implemented in numpy and final deapodization to
+        compensate for the convolution of the gridding kernel on the data.
 
         Args
         ----
@@ -227,7 +224,12 @@ class NUFFT(Operator):
         return self._deapo_adj(ogkspace)
 
     def fwd(self, inp):
-        """ Perform the forward NUFFT operation.
+        """
+        Perform the forward NUFFT operation.
+
+        This functions performs the forward NUFFT operation. It consists of
+        applying the deapodization followed by fourier transofrmation and
+        finally resampling of the cartesian data to the non-uniform trajecotry.
 
         Args
         ----
@@ -254,7 +256,7 @@ class NUFFT(Operator):
                    int(self.gridsize/2+self.dimX/2)]*self.deapo
 
     def _deapo_fwd(self, inp):
-        out = np.zeros((self.NScan, self.NC, self.NSlice,
+        out = np.zeros((self.num_scans, self.num_coils, self.num_slc,
                         self.gridsize, self.gridsize),
                        dtype=self.DTYPE)
         out[...,
@@ -268,14 +270,14 @@ class NUFFT(Operator):
 
         gridcenter = self.gridsize/2
 
-        sg = np.zeros((self.NScan, self.NC, self.NSlice,
+        sg = np.zeros((self.num_scans, self.num_coils, self.num_slc,
                        self.gridsize, self.gridsize),
                       dtype=self.DTYPE)
 
-        kdat = s*self.dcf
-        for iscan, iproj, ismpl in itertools.product(range(self.NScan),
-                                                     range(self.NProj),
-                                                     range(self.NSmpl)):
+        kdat = s*self.dens_cor
+        for iscan, iproj, ismpl in itertools.product(range(self.num_scans),
+                                                     range(self.num_proj),
+                                                     range(self.num_reads)):
             kx = self.traj[iscan, iproj, ismpl].imag
             ky = self.traj[iscan, iproj, ismpl].real
 
@@ -319,13 +321,13 @@ class NUFFT(Operator):
     def _invgrid_lut(self, sg):
         gridcenter = self.gridsize/2
 
-        s = np.zeros((self.NScan, self.NC, self.NSlice,
-                      self.NProj, self.NSmpl),
+        s = np.zeros((self.num_scans, self.num_coils, self.num_slc,
+                      self.num_proj, self.num_reads),
                      dtype=self.DTYPE)
 
-        for iscan, iproj, ismpl in itertools.product(range(self.NScan),
-                                                     range(self.NProj),
-                                                     range(self.NSmpl)):
+        for iscan, iproj, ismpl in itertools.product(range(self.num_scans),
+                                                     range(self.num_proj),
+                                                     range(self.num_reads)):
             kx = self.traj[iscan, iproj, ismpl].imag
             ky = self.traj[iscan, iproj, ismpl].real
 
@@ -364,43 +366,24 @@ class NUFFT(Operator):
 
                         s[iscan, :, :, iproj, ismpl] += \
                             kern*sg[iscan, :, :, indy, indx]
-        return s*self.dcf
+        return s*self.dens_cor
 
 
 class MRIImagingModel(Operator):
-    """ The MRI imaging model including Coils.
+    """
+    The MRI imaging model including Coils.
 
-    TODO
+    Linear Operator including coil sensitivities and fourier transform to
+    transverse between k-space and image space.
 
     Attributes
     ----------
-      traj (Numpy.Array):
-        The comlex sampling trajectory
-      dcf (Numpy.Array):
-        The densitiy compenation function
-      ogf (float):
-        The overgriddingfactor for non-cartesian k-spaces.
-      fft_shape (tuple of s):
-        3 dimensional tuple. Dim 0 contas all Scans, Coils and Slices.
-        Dim 1 and 2 the overgridded image dimensions.
-      fft_scale (float32):
-        The scaling factor to achieve a good adjoness of the forward and
-        backward FFT.
-      cl_kerneltable (PyOpenCL.Buffer):
-        The gridding lookup table as read only Buffer
-      cl_deapo (PyOpenCL.Buffer):
-        The deapodization lookup table as read only Buffer
-      par_fft ():
-        The number of parallel fft calls. Typically it iterates over the
-        Scans.
-      fft (gpyfft.fft.FFT):
-        The fft object created from gpyfft (A wrapper for clFFT). The object
-        is created only once an reused inp each iterations, iterationg over
-        all scans to keep the memory footpr low.
-      prg (PyOpenCL.Program):
-        The PyOpenCL.Program object containing the necessary kernels to
-        execute the linear Operator. This will be determined by the
-        factory and set after the object is created.
+      coils (Numpy.Array):
+        The comlex coil sensitivity profiles
+      conj_coils (Numpy.Array):
+        The precomputed comlex conjugate coil sensitivity profiles
+      NUFFT (linop.NUFFT):
+        The NUFFT object to perform gridding.
     """
 
     def __init__(
@@ -409,42 +392,38 @@ class MRIImagingModel(Operator):
             trajectory,
             DTYPE=np.complex64,
             DTYPE_real=np.float32):
-        """ NUFFT object constructor.
+        """
+        NUFFT object constructor.
 
         Args
         ----
-          ctx (PyOpenCL.Context):
-            The context for the PyOpenCL computations.
-          queue (PyOpenCL.Queue):
-            The computation Queue for the PyOpenCL kernels.
           par (dict): A python dict containing the necessary information to
-            setup the object. Needs to contain the number of slices (NSlice),
-            number of scans (NScan), image dimensions (dimX, dimY), number of
-            coils (NC), sampling pos (N) and read outs (NProj)
-            a PyOpenCL queue (queue) and the complex coil
-            sensitivities (C).
-          kwidth ():
-            The width of the sampling kernel for regridding of non-uniform
-            kspace samples.
-          klength ():
-            The length of the kernel lookup table which samples the contineous
-            gridding kernel.
-          fft_dim (tuple of s):
-            The dimensions which should be transformed. Defaults
-            to 1 and 2 corresponding the the last two of fft_dim.
+            setup the object. Needs to contain the number of slices (num_slc),
+            number of scans (num_scans), image dimensions (dimX, dimY),
+            number of coils (num_coils), sampling pos (N)
+            and read outs (num_proj) and the complex
+            coil sensitivities (C).
+          trajectory (numpy.array):
+            Complex trajectory information for kx/ky points.
           DTYPE (Numpy.Type):
             The comlex precission type. Currently complex64 is used.
           DTYPE_real (Numpy.Type):
             The real precission type. Currently float32 is used.
         """
         super().__init__(par, DTYPE, DTYPE_real)
-        par["traj"] = trajectory[None, ...]
-        self.NUFFT = NUFFT(par, DTYPE=DTYPE, DTYPE_real=DTYPE_real)
-        self.Coils = par["C"]
-        self.conjCoils = np.conj(par["C"])
+
+        self.NUFFT = NUFFT(par, trajectory[None, ...],
+                           DTYPE=DTYPE, DTYPE_real=DTYPE_real)
+        self.coils = par["coils"]
+        self.conj_coils = np.conj(par["coils"])
 
     def adj(self, inp):
-        """ Perform the inverse (adjo) NUFFT operation.
+        """
+        Perform the adjoint imaging operation.
+
+        Perform the adjoint imaging operation consisting of the NUFFT
+        followed by multiplication with the complex conjugate coil
+        sensitivity profiles.
 
         Args
         ----
@@ -453,10 +432,14 @@ class MRIImagingModel(Operator):
           s (Numpy.Array):
             The non-uniformly gridded k-space
         """
-        return np.sum(self.NUFFT.adj(inp)*self.conjCoils, 1)
+        return np.sum(self.NUFFT.adj(inp)*self.conj_coils, 1)
 
     def fwd(self, inp):
-        """ Perform the forward NUFFT operation.
+        """
+        Perform the forward imaging operation.
+
+        Perform the forward imaging operation consisting of multiplication
+        with coil sensitivity profiles followed by the NUFFT.
 
         Args
         ----
@@ -465,4 +448,4 @@ class MRIImagingModel(Operator):
           sg (Numpy.Array):
             The complex image data.
         """
-        return self.NUFFT.fwd(inp*self.Coils)
+        return self.NUFFT.fwd(inp*self.coils)

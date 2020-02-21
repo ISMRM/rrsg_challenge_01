@@ -23,10 +23,10 @@ import numpy as np
 import os
 import h5py
 import argparse
-from python.rrsg_cgreco._helper_fun import goldcomp as goldcomp
-from python.rrsg_cgreco._helper_fun.est_coils import estimate_coil_sensitivities
-import python.rrsg_cgreco.linop as linop
-import python.rrsg_cgreco.solver as solver
+from rrsg_cgreco._helper_fun import goldcomp as goldcomp
+from rrsg_cgreco._helper_fun.est_coils import estimate_coil_sensitivities
+import rrsg_cgreco.linop as linop
+import rrsg_cgreco.solver as solver
 
 DTYPE = np.complex64
 DTYPE_real = np.float32
@@ -35,9 +35,11 @@ DTYPE_real = np.float32
 def run(config='default', inscale=True, denscor=True,
         data='rawdata_brain_radial_96proj_12ch.h5', acc=1,
         ogf='1.706'):
-    '''
-    Function to run the CG reco of radial data.
-    Args:
+    """
+    Run the CG reco of radial data.
+
+    Args
+    ----
       config (string):
          Name of config file to use (default).
          The file is assumed to be in the same folder where the script is run.
@@ -55,7 +57,7 @@ def run(config='default', inscale=True, denscor=True,
          E.g. 1 uses all available spokes 2 every 2nd.
       ogf (string):
          Ratio between Cartesian cropped grid and full regridded k-space grid.
-    '''
+    """
     parser = argparse.ArgumentParser(description='CG Sense Reconstruction')
     parser.add_argument(
       '--config', default=config, dest='config',
@@ -80,13 +82,17 @@ def run(config='default', inscale=True, denscor=True,
     _run_reco(args)
 
 
-def _prepareData(path, acc):
-    '''
+def _prepare_data(path, acc):
+    """
+    Preparse data for recon.
+
     Reading in h5 data from file. And apply undersampling if specified.
     It is assumed that the data is saved as complex valued entry named
     "rawdata". The corresponding measurement trajectory is also saved as
     complex valued entry named "trajectory"
-    Args:
+
+    Args
+    ----
       path (string):
          Full qualified path to the h5 data file.
       acc (int):
@@ -95,16 +101,19 @@ def _prepareData(path, acc):
          E.g. 1 uses all available spokes 2 every 2nd.
       par (dict):
          Dictionary for storing data and parameters.
-   Retruns:
-     rawdata (np.complex64):
-       The rawdata array
-     trajectory (np.complex64):
-       The k-space trajectory
-   Raises:
+
+    Retruns
+    -------
+      rawdata (np.complex64):
+         The rawdata array
+      trajectory (np.complex64):
+         The k-space trajectory
+
+    Raises
+    ------
        ValueError:
          If no data file is specified
-    '''
-
+    """
     if path == '':
         raise ValueError("No data file specified")
 
@@ -152,57 +161,61 @@ def _prepareData(path, acc):
     return (rawdata, trajectory)
 
 
-def _setupParamterDict(rawdata, traj, ogf):
-    '''
-    Setup the parameter dict.
+def _setup_paramter_dict(rawdata, traj, ogf):
+    """
+    Parameter dict creation.
 
-    Args:
+    Args
+    ----
       rawdata (np.complex64):
         The raw k-space data
       ogf (string):
          Ratio between Cartesian cropped grid and full regridded k-space grid.
-    Returns:
+
+    Returns
+    -------
       par (dict):
         A dictionary storing reconstruction related parameters like number of
         coils and image dimension in 2D.
-    '''
+    """
     # Create empty dict
     par = {}
-    [nCh, nSpokes, nFE] = rawdata.shape
+    [nCh, nSpokes, num_reads] = rawdata.shape
 
     par["ogf"] = float(eval(ogf))
-    dimX, dimY = [int(nFE/par["ogf"]), int(nFE/par["ogf"])]
+    dimX, dimY = [int(num_reads/par["ogf"]), int(num_reads/par["ogf"])]
 
     # Calculate density compensation for radial data.
     #############
     # This needs to be adjusted for spirals!!!!!
     #############
-    par["dcf"] = np.sqrt(np.array(goldcomp.cmp(
+    par["dens_cor"] = np.sqrt(np.array(goldcomp.cmp(
                      traj), dtype=DTYPE_real)).astype(DTYPE_real)
-    par["dcf"] = np.require(np.abs(par["dcf"]),
-                            DTYPE_real, requirements='C')
+    par["dens_cor"] = np.require(np.abs(par["dens_cor"]),
+                                 DTYPE_real, requirements='C')
 
-    par["NC"] = nCh
+    par["num_coils"] = nCh
     par["dimY"] = dimY
     par["dimX"] = dimX
-    par["nFE"] = nFE
-    par["Nproj"] = nSpokes
-    par["NScan"] = 1
-    par["NSlice"] = 1
+    par["num_reads"] = num_reads
+    par["num_proj"] = nSpokes
+    par["num_scans"] = 1
+    par["num_slc"] = 1
 
     return par
 
 
-def _saveToFile(result, args):
-    '''
+def _save_to_file(result, args):
+    """
     Save the reconstruction result to a h5 file.
 
-    Args:
+    Args
+    ----
       result (np.complex64):
         The reconstructed complex images to save.
       args (ArgumentParser):
          Console arguments passed to the script.
-    '''
+    """
     outdir = ""
     if "heart" in args.data:
         outdir += "/heart"
@@ -228,11 +241,11 @@ def _run_reco(args):
 ###############################################################################
 # Read Input data   ###########################################################
 ###############################################################################
-    (rawdata, trajectory) = _prepareData(args.data, args.acc)
+    (rawdata, trajectory) = _prepare_data(args.data, args.acc)
 ###############################################################################
 # Setup parameters #############################################
 ###############################################################################
-    par = _setupParamterDict(rawdata, trajectory, args.ogf)
+    par = _setup_paramter_dict(rawdata, trajectory, args.ogf)
 ###############################################################################
 # Coil Sensitivity Estimation #################################################
 ###############################################################################
@@ -242,15 +255,15 @@ def _run_reco(args):
 ###############################################################################
     MRImagingOperator = linop.MRIImagingModel(par, trajectory)
     cgs = solver.CGReco(par)
-    cgs.setOperator(MRImagingOperator)
+    cgs.set_operator(MRImagingOperator)
 ###############################################################################
 # Start Reco ##################################################################
 ###############################################################################
-    recon_result = cgs.optimize(rawdata*par["dcf"])
+    recon_result = cgs.optimize(rawdata*par["dens_cor"])
 ###############################################################################
 # New .hdf5 save files ########################################################
 ###############################################################################
-    _saveToFile(recon_result, args)
+    _save_to_file(recon_result, args)
 
 
 if __name__ == '__main__':
