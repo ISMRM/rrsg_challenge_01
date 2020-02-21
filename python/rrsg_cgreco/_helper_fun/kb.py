@@ -21,6 +21,7 @@ limitations under the License.
 """
 import numpy as np
 from scipy.special import i0 as i0
+
 # function y = kb(u,w,beta)
 # Computes the Kaiser-Bessel function used for gridding, namely
 # y = f(u,w,beta) = I0 [ beta*sqrt(1-(2u/w)^2) ]/w
@@ -37,7 +38,7 @@ from scipy.special import i0 as i0
 # Modified by O. Maier
 
 
-def kb(u, w, beta, G):
+def kaiser_bessel(u, w, beta, G):
     """
     Kaiser-Bessel window precomputation.
 
@@ -58,13 +59,13 @@ def kb(u, w, beta, G):
       numpy.array
         Ramp for golden angle density compensation
     """
-    if (np.size(w) > 1):
-        raise('w should be a single scalar value.')
-    y = np.zeros_like(u)  # Allocate space.
-    uz = np.where(np.abs(u) <= w/(2*G))  # Indices where u<w/2.
+    assert np.size(w) == 1, 'w should be a single scalar value.'
 
-    if (np.size(uz) > 0):  # Calculate y at indices uz.
-        x = beta*np.sqrt(1-(2*u[uz]*G/w)**2)  # Argument - see Jackson '91.
-        y[uz] = G*i0(x)/w
+    y = np.zeros_like(u)  # Allocate space.
+    uz = np.where(np.abs(u) <= w / (2 * G))  # Indices where u<w/2.
+
+    if np.size(uz) > 0:  # Calculate y at indices uz.
+        x = beta * np.sqrt(1 - (2 * u[uz] * G / w) ** 2)  # Argument - see Jackson '91.
+        y[uz] = G * i0(x) / w
 
     return y

@@ -23,7 +23,7 @@ limitations under the License.
 import numpy as np
 
 
-def cmp(k):
+def get_golden_angle_dcf(k):
     """
     Golden angle density compensation.
 

@@ -62,12 +62,12 @@ def estimate_coil_sensitivities(data, trajectory, par):
             of coils (num_coils), sampling pos (N) and read outs (NProj).
 
     """
-    nlinvNewtonSteps = 6
-    nlinvRealConstr = False
+    nlinv_newton_steps = 6
+    nlinv_real_constr = False
 
     new_shape = (par["num_scans"] * par["num_proj"], par["num_reads"])
     traj_coil = np.reshape(trajectory, new_shape)
-    dens_cor_coil = np.sqrt(np.array(goldcomp.cmp(traj_coil), dtype=DTYPE))
+    dens_cor_coil = np.sqrt(np.array(goldcomp.get_golden_angle_dcf(traj_coil), dtype=DTYPE))
 
     C_shape = (par["num_coils"], par["num_slc"], par["dimY"], par["dimX"])
     par["C"] = np.zeros(C_shape, dtype=DTYPE)
@@ -106,15 +106,15 @@ def estimate_coil_sensitivities(data, trajectory, par):
 
         result = nlinvns.nlinvns(
                     np.squeeze(combined_data[:, :, i, ...]),
-                    nlinvNewtonSteps,
+                    nlinv_newton_steps,
                     True,
-                    nlinvRealConstr)
+                    nlinv_real_constr)
 
         par["coils"][:, i, :, :] = result[2:, -1, :, :]
         sys.stdout.write("slice %i done \r"
                          % (i))
         sys.stdout.flush()
-        if not nlinvRealConstr:
+        if not nlinv_real_constr:
             par["phase_map"][i, :, :] = np.exp(
                 1j * np.angle(result[0, -1, :, :]))
 

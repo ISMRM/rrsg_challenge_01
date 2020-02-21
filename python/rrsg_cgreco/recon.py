@@ -172,7 +172,7 @@ def setup_parameter_dict(rawdata, traj, ogf, traj_type='radial'):
     #############
     # This needs to be adjusted for spirals!!!!!
     #############
-    par["dens_cor"] = np.sqrt(np.array(goldcomp.cmp(
+    par["dens_cor"] = np.sqrt(np.array(goldcomp.get_golden_angle_dcf(
                      traj), dtype=DTYPE_real)).astype(DTYPE_real)
     par["dens_cor"] = np.require(np.abs(par["dens_cor"]),
                                  DTYPE_real, requirements='C')
