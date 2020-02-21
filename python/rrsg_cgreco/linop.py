@@ -412,7 +412,7 @@ class MRIImagingModel(Operator):
         """
         super().__init__(par, DTYPE, DTYPE_real)
 
-        self.NUFFT = NUFFT(par, trajectory[None, ...],
+        self.NUFFT = NUFFT(par, trajectory,
                            DTYPE=DTYPE, DTYPE_real=DTYPE_real)
         self.coils = par["coils"]
         self.conj_coils = np.conj(par["coils"])

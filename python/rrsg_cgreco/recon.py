@@ -253,7 +253,7 @@ def _run_reco(args):
 ###############################################################################
 # generate Linear Operator  ###################################################
 ###############################################################################
-    MRImagingOperator = linop.MRIImagingModel(par, trajectory)
+    MRImagingOperator = linop.MRIImagingModel(par, trajectory[None, ...])
     cgs = solver.CGReco(par)
     cgs.set_operator(MRImagingOperator)
 ###############################################################################

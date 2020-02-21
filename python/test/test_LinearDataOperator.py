@@ -30,6 +30,14 @@ def setupPar(par):
 
     par["traj"] = file['real_traj'][()].astype(DTYPE) + \
         1j*file['imag_traj'][()].astype(DTYPE)
+    print(par["traj"].shape)
+
+    par["coils"] = np.random.randn(par["num_coils"],
+                                   par["num_slc"],
+                                   par["dimY"], par["dimX"]) +\
+              1j * np.random.randn(par["num_coils"],
+                                   par["num_slc"],
+                                   par["dimY"], par["dimX"])
 
 
 class tmpArgs():
@@ -57,13 +65,59 @@ class OperatorKspaceRadial(unittest.TestCase):
                                        par["dimY"], par["dimX"]) +\
             1j * np.random.randn(par["num_scans"], par["num_coils"],
                                  par["num_slc"],
-                                 par["dimY"], par["dimX"])*0
+                                 par["dimY"], par["dimX"])
         self.opinadj = np.random.randn(par["num_scans"], par["num_coils"],
                                        par["num_slc"],
                                        par["num_proj"], par["num_reads"]) +\
             1j * np.random.randn(par["num_scans"], par["num_coils"],
                                  par["num_slc"],
-                                 par["num_proj"], par["num_reads"])*0
+                                 par["num_proj"], par["num_reads"])
+
+        self.opinfwd = self.opinfwd.astype(DTYPE)
+        self.opinadj = self.opinadj.astype(DTYPE)
+
+    def test_adj_outofplace(self):
+        outfwd = self.op.fwd(self.opinfwd)
+        outadj = self.op.adj(self.opinadj)
+
+        a = np.vdot(outfwd.flatten(),
+                    self.opinadj.flatten())/self.opinadj.size
+        b = np.vdot(self.opinfwd.flatten(),
+                    outadj.flatten())/self.opinadj.size
+
+        print("Adjointness: %.2e+j%.2e" % ((a - b).real, (a - b).imag))
+
+        self.assertAlmostEqual(a, b, places=12)
+
+
+class OperatorMRIRadial(unittest.TestCase):
+    def setUp(self):
+        parser = tmpArgs()
+        parser.streamed = False
+        parser.devices = [0]
+        parser.use_GPU = True
+
+        par = {}
+        setupPar(par)
+
+        self.op = linop.MRIImagingModel(
+            par,
+            par["traj"],
+            DTYPE=DTYPE,
+            DTYPE_real=DTYPE_real)
+
+        self.opinfwd = np.random.randn(par["num_scans"],
+                                       par["num_slc"],
+                                       par["dimY"], par["dimX"]) +\
+            1j * np.random.randn(par["num_scans"],
+                                 par["num_slc"],
+                                 par["dimY"], par["dimX"])
+        self.opinadj = np.random.randn(par["num_scans"], par["num_coils"],
+                                       par["num_slc"],
+                                       par["num_proj"], par["num_reads"]) +\
+            1j * np.random.randn(par["num_scans"], par["num_coils"],
+                                 par["num_slc"],
+                                 par["num_proj"], par["num_reads"])
 
         self.opinfwd = self.opinfwd.astype(DTYPE)
         self.opinadj = self.opinadj.astype(DTYPE)
