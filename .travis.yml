@@ -13,4 +13,5 @@ install:
   - pip install ./python/.
 
 script: 
+  - pytest ./python/test/
   - rrsg_cgreco --data ./python/rrsg_cgreco/rawdata_brain_radial_96proj_12ch.h5

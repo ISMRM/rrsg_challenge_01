@@ -26,7 +26,7 @@ def setupPar(par):
     par["dimY"] = 256
     par["num_proj"] = 34
     par["num_reads"] = 512
-    file = h5py.File('./test/smalltest.h5')
+    file = h5py.File('./python/test/smalltest.h5')
 
     par["traj"] = file['real_traj'][()].astype(DTYPE) + \
         1j*file['imag_traj'][()].astype(DTYPE)
