@@ -20,6 +20,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import numpy as np
+from scipy.special import i0 as i0
 # function y = kb(u,w,beta)
 # Computes the Kaiser-Bessel function used for gridding, namely
 # y = f(u,w,beta) = I0 [ beta*sqrt(1-(2u/w)^2) ]/w
@@ -37,6 +38,26 @@ import numpy as np
 
 
 def kb(u, w, beta, G):
+    """
+    Kaiser-Bessel window precomputation.
+
+    Args
+    ----
+      u (numpy.array):
+         Kernel Radii in grid samples
+      w (int):
+        Kernel width in grid samples
+      beta (float):
+        scale for the argument of the modified bessel function of oder 0,
+        see Jackson '91 and Beatty et al.
+      G (int):
+        Grid samples
+
+    Returns
+    -------
+      numpy.array
+        Ramp for golden angle density compensation
+    """
     if (np.size(w) > 1):
         raise('w should be a single scalar value.')
     y = np.zeros_like(u)  # Allocate space.
@@ -44,6 +65,6 @@ def kb(u, w, beta, G):
 
     if (np.size(uz) > 0):  # Calculate y at indices uz.
         x = beta*np.sqrt(1-(2*u[uz]*G/w)**2)  # Argument - see Jackson '91.
-        y[uz] = G*np.i0(x)/w
+        y[uz] = G*i0(x)/w
 
     return y

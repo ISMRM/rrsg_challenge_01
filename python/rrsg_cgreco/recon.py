@@ -25,10 +25,10 @@ import numpy as np
 import os
 import h5py
 import argparse
-from python.rrsg_cgreco._helper_fun import goldcomp as goldcomp
-from python.rrsg_cgreco._helper_fun.est_coils import estimate_coil_sensitivities
-import python.rrsg_cgreco.linop as linop
-import python.rrsg_cgreco.solver as solver
+from rrsg_cgreco._helper_fun import goldcomp as goldcomp
+from rrsg_cgreco._helper_fun.est_coils import estimate_coil_sensitivities
+import rrsg_cgreco.linop as linop
+import rrsg_cgreco.solver as solver
 
 DTYPE = np.complex64
 DTYPE_real = np.float32
@@ -102,13 +102,11 @@ def read_data(path, acc, data_rawdata_key='rawdata', data_trajectory_key='trajec
          E.g. 1 uses all available spokes 2 every 2nd.
       par (dict):
          Dictionary for storing data and parameters.
-
    Retruns:
      rawdata (np.complex64):
        The rawdata array
      trajectory (np.complex64):
        The k-space trajectory
-
    Raises:
        ValueError:
          If no data file is specified
@@ -150,51 +148,57 @@ def setup_parameter_dict(rawdata, traj, ogf, traj_type='radial'):
     """
     Setup the parameter dict.
 
-    Args:
+    Args
+    ----
       rawdata (np.complex64):
         The raw k-space data
       ogf (string):
          Ratio between Cartesian cropped grid and full regridded k-space grid.
-    Returns:
+
+    Returns
+    -------
       par (dict):
         A dictionary storing reconstruction related parameters like number of
         coils and image dimension in 2D.
     """
-    # Initialize dictionary
+    # Create empty dict
     par = {}
-    nCh, nSpokes, nFE = rawdata.shape
+    [nCh, nSpokes, num_reads] = rawdata.shape
 
-    par.setdefault("ogf", float(eval(ogf)))
-    dimX = dimY = int(nFE / par["ogf"])
+    par["ogf"] = float(eval(ogf))
+    dimX, dimY = [int(num_reads/par["ogf"]), int(num_reads/par["ogf"])]
 
     # Calculate density compensation for radial data.
-    if traj_type == 'radial':
-        par["dcf"] = np.sqrt(np.array(goldcomp.cmp(traj), dtype=DTYPE_real)).astype(DTYPE_real)
-        par["dcf"] = np.require(np.abs(par["dcf"]), DTYPE_real, requirements='C')
-    else:
-        par.setdefault("dcf", np.empty(traj.shape))
+    #############
+    # This needs to be adjusted for spirals!!!!!
+    #############
+    par["dens_cor"] = np.sqrt(np.array(goldcomp.cmp(
+                     traj), dtype=DTYPE_real)).astype(DTYPE_real)
+    par["dens_cor"] = np.require(np.abs(par["dens_cor"]),
+                                 DTYPE_real, requirements='C')
 
-    par["NC"] = nCh
+    par["num_coils"] = nCh
     par["dimY"] = dimY
     par["dimX"] = dimX
-    par["nFE"] = nFE
-    par["Nproj"] = nSpokes
-    par["NScan"] = 1
-    par["NSlice"] = 1
+    par["num_reads"] = num_reads
+    par["num_proj"] = nSpokes
+    par["num_scans"] = 1
+    par["num_slc"] = 1
 
     return par
 
 
 def save_to_file(result, args):
-    '''
+    """
     Save the reconstruction result to a h5 file.
 
-    Args:
+    Args
+    ----
       result (np.complex64):
         The reconstructed complex images to save.
       args (ArgumentParser):
          Console arguments passed to the script.
-    '''
+    """
     outdir = ""
     if "heart" in args.data:
         outdir += "/heart"
@@ -249,5 +253,4 @@ if __name__ == '__main__':
     parser.add_argument('--ogf', default='1.706', type=str, dest='ogf',
                         help='Overgridfactor. 1.706 for Brain, 1+1/3 for heart data.')
     args = parser.parse_args()
-
     _run_reco(args)

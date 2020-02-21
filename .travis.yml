@@ -1,0 +1,17 @@
+language: python
+
+dist: bionic          # required for Python >= 3.7
+python: 3.7           
+sudo: required
+addons:
+  apt:
+    update: true
+
+install: 
+  - pip install --upgrade pip  
+  - pip install -r requirements.txt
+  - pip install ./python/.
+
+script: 
+  - pytest ./python/test/
+  - rrsg_cgreco --data ./python/rrsg_cgreco/rawdata_brain_radial_96proj_12ch.h5

@@ -23,7 +23,20 @@ limitations under the License.
 import numpy as np
 
 
-def cmp(k, cmp_type=None):
+def cmp(k):
+    """
+    Golden angle density compensation.
+
+    Args
+    ----
+      k (numpy.array):
+         Complex k-space trajectory
+
+    Returns
+    -------
+      numpy.array
+        Ramp for golden angle density compensation
+    """
     if len(np.shape(k)) == 2:
         nspokes, N = np.shape(k)
     elif len(np.shape(k)) == 3:

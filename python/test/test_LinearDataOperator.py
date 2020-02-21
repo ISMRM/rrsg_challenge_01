@@ -12,24 +12,32 @@ except ImportError:
     import unittest
 import numpy as np
 import h5py
-from python.rrsg_cgreco import linop
+from rrsg_cgreco import linop
 
 DTYPE = np.complex128
 DTYPE_real = np.float64
 
 
 def setupPar(par):
-    par["NScan"] = 1
-    par["NC"] = 5
-    par["NSlice"] = 1
+    par["num_scans"] = 1
+    par["num_coils"] = 5
+    par["num_slc"] = 1
     par["dimX"] = 256
     par["dimY"] = 256
-    par["Nproj"] = 34
-    par["N"] = 512
-    file = h5py.File('./test/smalltest.h5')
+    par["num_proj"] = 34
+    par["num_reads"] = 512
+    file = h5py.File('./python/test/smalltest.h5')
 
     par["traj"] = file['real_traj'][()].astype(DTYPE) + \
         1j*file['imag_traj'][()].astype(DTYPE)
+    print(par["traj"].shape)
+
+    par["coils"] = np.random.randn(par["num_coils"],
+                                   par["num_slc"],
+                                   par["dimY"], par["dimX"]) +\
+              1j * np.random.randn(par["num_coils"],
+                                   par["num_slc"],
+                                   par["dimY"], par["dimX"])
 
 
 class tmpArgs():
@@ -48,17 +56,68 @@ class OperatorKspaceRadial(unittest.TestCase):
 
         self.op = linop.NUFFT(
             par,
+            par["traj"],
             DTYPE=DTYPE,
             DTYPE_real=DTYPE_real)
 
-        self.opinfwd = np.random.randn(par["NScan"], par["NC"], par["NSlice"],
+        self.opinfwd = np.random.randn(par["num_scans"], par["num_coils"],
+                                       par["num_slc"],
                                        par["dimY"], par["dimX"]) +\
-            1j * np.random.randn(par["NScan"], par["NC"], par["NSlice"],
-                                 par["dimY"], par["dimX"])*0
-        self.opinadj = np.random.randn(par["NScan"], par["NC"], par["NSlice"],
-                                       par["Nproj"], par["N"]) +\
-            1j * np.random.randn(par["NScan"], par["NC"], par["NSlice"],
-                                 par["Nproj"], par["N"])*0
+            1j * np.random.randn(par["num_scans"], par["num_coils"],
+                                 par["num_slc"],
+                                 par["dimY"], par["dimX"])
+        self.opinadj = np.random.randn(par["num_scans"], par["num_coils"],
+                                       par["num_slc"],
+                                       par["num_proj"], par["num_reads"]) +\
+            1j * np.random.randn(par["num_scans"], par["num_coils"],
+                                 par["num_slc"],
+                                 par["num_proj"], par["num_reads"])
+
+        self.opinfwd = self.opinfwd.astype(DTYPE)
+        self.opinadj = self.opinadj.astype(DTYPE)
+
+    def test_adj_outofplace(self):
+        outfwd = self.op.fwd(self.opinfwd)
+        outadj = self.op.adj(self.opinadj)
+
+        a = np.vdot(outfwd.flatten(),
+                    self.opinadj.flatten())/self.opinadj.size
+        b = np.vdot(self.opinfwd.flatten(),
+                    outadj.flatten())/self.opinadj.size
+
+        print("Adjointness: %.2e+j%.2e" % ((a - b).real, (a - b).imag))
+
+        self.assertAlmostEqual(a, b, places=12)
+
+
+class OperatorMRIRadial(unittest.TestCase):
+    def setUp(self):
+        parser = tmpArgs()
+        parser.streamed = False
+        parser.devices = [0]
+        parser.use_GPU = True
+
+        par = {}
+        setupPar(par)
+
+        self.op = linop.MRIImagingModel(
+            par,
+            par["traj"],
+            DTYPE=DTYPE,
+            DTYPE_real=DTYPE_real)
+
+        self.opinfwd = np.random.randn(par["num_scans"],
+                                       par["num_slc"],
+                                       par["dimY"], par["dimX"]) +\
+            1j * np.random.randn(par["num_scans"],
+                                 par["num_slc"],
+                                 par["dimY"], par["dimX"])
+        self.opinadj = np.random.randn(par["num_scans"], par["num_coils"],
+                                       par["num_slc"],
+                                       par["num_proj"], par["num_reads"]) +\
+            1j * np.random.randn(par["num_scans"], par["num_coils"],
+                                 par["num_slc"],
+                                 par["num_proj"], par["num_reads"])
 
         self.opinfwd = self.opinfwd.astype(DTYPE)
         self.opinadj = self.opinadj.astype(DTYPE)
