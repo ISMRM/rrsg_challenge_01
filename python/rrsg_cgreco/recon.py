@@ -19,6 +19,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
+
 import numpy as np
 import os
 import h5py
@@ -32,128 +34,120 @@ DTYPE = np.complex64
 DTYPE_real = np.float32
 
 
-def run(config='default', inscale=True, denscor=True,
-        data='rawdata_brain_radial_96proj_12ch.h5', acc=1,
-        ogf='1.706'):
-    '''
-    Function to run the CG reco of radial data.
+def get_args(config='default', inscale=True, denscor=True, data='rawdata_brain_radial_96proj_12ch.h5', acc=1, ogf='1.706'):
+
+    parser = argparse.ArgumentParser(description='CG Sense Reconstruction')
+    parser.add_argument('--config', default=config, dest='config',
+                        help='Name of config file to use (assumed to be in the same folder). '
+                             'If not specified, use default parameters.')
+    parser.add_argument('--inscale', default=inscale, type=int, dest='inscale',
+                        help='Perform Intensity Scaling.')
+    parser.add_argument('--denscor', default=denscor, type=int, dest='denscor',
+                        help='Perform density correction.')
+    parser.add_argument('--data', default=data, dest='data',
+                        help='Path to the h5 data file.')
+    parser.add_argument('--acc', default=acc, type=int, dest='acc',
+                        help='Desired acceleration factor.')
+    parser.add_argument('--ogf', default=ogf, type=str, dest='ogf',
+                        help='Overgridfactor. 1.706 for Brain, 1+1/3 for heart data.')
+    args = parser.parse_args()
+    return args
+
+
+def run(config='default', inscale=True, denscor=True, data='rawdata_brain_radial_96proj_12ch.h5', acc=1, ogf='1.706'):
+    """Function to run the CG reco of radial data.
+
     Args:
       config (string):
          Name of config file to use (default).
          The file is assumed to be in the same folder where the script is run.
          If not specified, use default parameters.
+
       inscale (bool):
          Wether to perform intensity scaling. Defaults to True.
+
       denscor (bool):
          Switch to choose between reconstruction with (True) or without (False)
          density compensation. Defaults to True.
+
       data (string):
          Full qualified path to the h5 data file.
+
       acc (int):
          Desired acceleration compared to the number of
          spokes provided in data.
          E.g. 1 uses all available spokes 2 every 2nd.
+
       ogf (string):
          Ratio between Cartesian cropped grid and full regridded k-space grid.
-    '''
-    parser = argparse.ArgumentParser(description='CG Sense Reconstruction')
-    parser.add_argument(
-      '--config', default=config, dest='config',
-      help='Name of config file to use (assumed to be in the same folder). \
- If not specified, use default parameters.')
-    parser.add_argument(
-      '--inscale', default=inscale, type=int, dest='inscale',
-      help='Perform Intensity Scaling.')
-    parser.add_argument(
-      '--denscor', default=denscor, type=int, dest='denscor',
-      help='Perform density correction.')
-    parser.add_argument(
-      '--data', default=data, dest='data',
-      help='Path to the h5 data file.')
-    parser.add_argument(
-      '--acc', default=acc, type=int, dest='acc',
-      help='Desired acceleration factor.')
-    parser.add_argument(
-      '--ogf', default=ogf, type=str, dest='ogf',
-      help='Overgridfactor. 1.706 for Brain, 1+1/3 for heart data.')
-    args = parser.parse_args()
+
+    Returns:
+
+    """
+    args = get_args(config, inscale, denscor, data, acc, ogf)
     _run_reco(args)
 
 
-def _prepareData(path, acc):
-    '''
-    Reading in h5 data from file. And apply undersampling if specified.
-    It is assumed that the data is saved as complex valued entry named
-    "rawdata". The corresponding measurement trajectory is also saved as
-    complex valued entry named "trajectory"
+def read_data(path, acc, data_rawdata_key='rawdata', data_trajectory_key='trajectory'):
+    """Reading in h5 data from the path variable. Apply undersampling if specified.
+    It is assumed that the data is saved as complex valued entry named "rawdata".
+    The corresponding measurement trajectory is also saved as complex valued entry named "trajectory"
+
     Args:
       path (string):
-         Full qualified path to the h5 data file.
+         Full qualified path to the .h5 data file.
       acc (int):
          Desired acceleration compared to the number of
          spokes provided in data.
          E.g. 1 uses all available spokes 2 every 2nd.
       par (dict):
          Dictionary for storing data and parameters.
+
    Retruns:
      rawdata (np.complex64):
        The rawdata array
      trajectory (np.complex64):
        The k-space trajectory
+
    Raises:
        ValueError:
          If no data file is specified
-    '''
+    """
 
-    if path == '':
-        raise ValueError("No data file specified")
+    if not os.path.isfile(path):
+        raise ValueError("Given path is not a file.")
 
     name = os.path.normpath(path)
-    h5_dataset = h5py.File(name, 'r')
-    h5_dataset_rawdata_name = 'rawdata'
-    h5_dataset_trajectory_name = 'trajectory'
-
-    if "heart" in name:
-        if acc == 2:
-            trajectory = h5_dataset.get(h5_dataset_trajectory_name)[
-                :, :, :33]
-            rawdata = h5_dataset.get(h5_dataset_rawdata_name)[
-                :, :, :33, :]
-        elif acc == 3:
-            trajectory = h5_dataset.get(h5_dataset_trajectory_name)[
-                :, :, :22]
-            rawdata = h5_dataset.get(h5_dataset_rawdata_name)[
-                :, :, :22, :]
-        elif acc == 4:
-            trajectory = h5_dataset.get(h5_dataset_trajectory_name)[
-                :, :, :11]
-            rawdata = h5_dataset.get(h5_dataset_rawdata_name)[
-                :, :, :11, :]
+    with h5py.File(name, 'r') as h5_dataset:
+        if "heart" in name:
+            if acc == 2:
+                trajectory = h5_dataset.get(data_trajectory_key)[:, :, :33]
+                rawdata = h5_dataset.get(data_rawdata_key)[:, :, :33, :]
+            elif acc == 3:
+                trajectory = h5_dataset.get(data_trajectory_key)[:, :, :22]
+                rawdata = h5_dataset.get(data_rawdata_key)[:, :, :22, :]
+            elif acc == 4:
+                trajectory = h5_dataset.get(data_trajectory_key)[:, :, :11]
+                rawdata = h5_dataset.get(data_rawdata_key)[:, :, :11, :]
+            else:
+                trajectory = h5_dataset.get(data_trajectory_key)[...]
+                rawdata = h5_dataset.get(data_rawdata_key)[...]
         else:
-            trajectory = h5_dataset.get(h5_dataset_trajectory_name)[...]
-            rawdata = h5_dataset.get(h5_dataset_rawdata_name)[...]
-    else:
-        trajectory = h5_dataset.get(h5_dataset_trajectory_name)[
-            :, :, ::acc]
-        rawdata = h5_dataset.get(h5_dataset_rawdata_name)[
-            :, :, ::acc, :]
+            trajectory = h5_dataset.get(data_trajectory_key)[:, :, ::acc]
+            rawdata = h5_dataset.get(data_rawdata_key)[:, :, ::acc, :]
 
     # Squeeze dummy dimension and transpose to C-style ordering.
     rawdata = np.squeeze(rawdata.T)
 
-    # Norm Trajectory to the range of (-1/2)/(1/2)
-    trajectory = np.require((
-        trajectory[0]/(2*np.max(trajectory[0])) +
-        1j*trajectory[1]/(2*np.max(trajectory[0]))).T,
-                   requirements='C')
+    # Normalize trajectory to the range of (-1/2)/(1/2)
+    norm_trajectory = 2 * np.max(trajectory[0])
+    trajectory = np.require((trajectory[0] / norm_trajectory + 1j * trajectory[1] / norm_trajectory).T, requirements='C')
 
-    # Close file after everything was read
-    h5_dataset.close()
-    return (rawdata, trajectory)
+    return rawdata, trajectory
 
 
-def _setupParamterDict(rawdata, traj, ogf):
-    '''
+def setup_parameter_dict(rawdata, traj, ogf, traj_type='radial'):
+    """
     Setup the parameter dict.
 
     Args:
@@ -165,22 +159,20 @@ def _setupParamterDict(rawdata, traj, ogf):
       par (dict):
         A dictionary storing reconstruction related parameters like number of
         coils and image dimension in 2D.
-    '''
-    # Create empty dict
+    """
+    # Initialize dictionary
     par = {}
-    [nCh, nSpokes, nFE] = rawdata.shape
+    nCh, nSpokes, nFE = rawdata.shape
 
-    par["ogf"] = float(eval(ogf))
-    dimX, dimY = [int(nFE/par["ogf"]), int(nFE/par["ogf"])]
+    par.setdefault("ogf", float(eval(ogf)))
+    dimX = dimY = int(nFE / par["ogf"])
 
     # Calculate density compensation for radial data.
-    #############
-    # This needs to be adjusted for spirals!!!!!
-    #############
-    par["dcf"] = np.sqrt(np.array(goldcomp.cmp(
-                     traj), dtype=DTYPE_real)).astype(DTYPE_real)
-    par["dcf"] = np.require(np.abs(par["dcf"]),
-                            DTYPE_real, requirements='C')
+    if traj_type == 'radial':
+        par["dcf"] = np.sqrt(np.array(goldcomp.cmp(traj), dtype=DTYPE_real)).astype(DTYPE_real)
+        par["dcf"] = np.require(np.abs(par["dcf"]), DTYPE_real, requirements='C')
+    else:
+        par.setdefault("dcf", np.empty(traj.shape))
 
     par["NC"] = nCh
     par["dimY"] = dimY
@@ -193,7 +185,7 @@ def _setupParamterDict(rawdata, traj, ogf):
     return par
 
 
-def _saveToFile(result, args):
+def save_to_file(result, args):
     '''
     Save the reconstruction result to a h5 file.
 
@@ -225,54 +217,37 @@ def _saveToFile(result, args):
 
 
 def _run_reco(args):
-###############################################################################
-# Read Input data   ###########################################################
-###############################################################################
-    (rawdata, trajectory) = _prepareData(args.data, args.acc)
-###############################################################################
-# Setup parameters #############################################
-###############################################################################
-    par = _setupParamterDict(rawdata, trajectory, args.ogf)
-###############################################################################
-# Coil Sensitivity Estimation #################################################
-###############################################################################
+    # Read input data
+    rawdata, trajectory = read_data(args.data, args.acc)
+    # Setup parameters
+    par = setup_parameter_dict(rawdata, trajectory, args.ogf)
+    # Get coil sensitivities in the parameter dict
     estimate_coil_sensitivities(rawdata, trajectory, par)
-###############################################################################
-# generate Linear Operator  ###################################################
-###############################################################################
+    # Get operator
     MRImagingOperator = linop.MRIImagingModel(par, trajectory)
     cgs = solver.CGReco(par)
     cgs.setOperator(MRImagingOperator)
-###############################################################################
-# Start Reco ##################################################################
-###############################################################################
+    # Start reconstruction
     recon_result = cgs.optimize(rawdata*par["dcf"])
-###############################################################################
-# New .hdf5 save files ########################################################
-###############################################################################
-    _saveToFile(recon_result, args)
+    # Store results
+    save_to_file(recon_result, args)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='CG Sense Reconstruction')
-    parser.add_argument(
-      '--config', default='default', dest='config',
-      help='Name of config file to use (assumed to be in the same folder). \
- If not specified, use default parameters.')
-    parser.add_argument(
-      '--inscale', default=1, type=int, dest='inscale',
-      help='Perform Intensity Scaling.')
-    parser.add_argument(
-      '--denscor', default=1, type=int, dest='denscor',
-      help='Perform density correction.')
-    parser.add_argument(
-      '--data', default='rawdata_brain_radial_96proj_12ch.h5', dest='data',
-      help='Path to the h5 data file.')
-    parser.add_argument(
-      '--acc', default=1, type=int, dest='acc',
-      help='Desired acceleration factor.')
-    parser.add_argument(
-      '--ogf', default="1.706", type=str, dest='ogf',
-      help='Overgridfactor. 1.706 for Brain, 1+1/3 for heart data.')
+    parser.add_argument('--config', default='default', dest='config',
+                        help='Name of config file to use (assumed to be in the same folder). '
+                             'If not specified, use default parameters.')
+    parser.add_argument('--inscale', default=1, type=int, dest='inscale',
+                        help='Perform Intensity Scaling.')
+    parser.add_argument('--denscor', default=1, type=int, dest='denscor',
+                        help='Perform density correction.')
+    parser.add_argument('--data', default='rawdata_brain_radial_96proj_12ch.h5', dest='data',
+                        help='Path to the h5 data file.')
+    parser.add_argument('--acc', default=1, type=int, dest='acc',
+                        help='Desired acceleration factor.')
+    parser.add_argument('--ogf', default='1.706', type=str, dest='ogf',
+                        help='Overgridfactor. 1.706 for Brain, 1+1/3 for heart data.')
     args = parser.parse_args()
+
     _run_reco(args)

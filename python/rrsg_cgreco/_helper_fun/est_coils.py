@@ -36,6 +36,9 @@ DTYPE_real = np.float32
 
 def estimate_coil_sensitivities(data, trajectory, par):
     """
+    Given the data, trajector and a paramter dict, it modifies this dictionary to also contain the coil sensitivities.
+
+    Maybe return the modified dictionary?
 
     Args:
         data:
@@ -48,18 +51,14 @@ def estimate_coil_sensitivities(data, trajectory, par):
     nlinvNewtonSteps = 6
     nlinvRealConstr = False
 
-    traj_coil = np.reshape(
-        trajectory, (par["NScan"] * par["Nproj"], par["nFE"]))
-    dcf_coil = np.sqrt(
-        np.array(
-            goldcomp.cmp(traj_coil),
-            dtype=DTYPE))
+    new_shape = (par["NScan"] * par["Nproj"], par["nFE"])
+    traj_coil = np.reshape(trajectory, new_shape)
+    dcf_coil = np.sqrt(np.array(goldcomp.cmp(traj_coil), dtype=DTYPE))
 
-    par["C"] = np.zeros(
-        (par["NC"], par["NSlice"], par["dimY"], par["dimX"]),
-        dtype=DTYPE)
-    par["phase_map"] = np.zeros(
-        (par["NSlice"], par["dimY"], par["dimX"]), dtype=DTYPE)
+    C_shape = (par["NC"], par["NSlice"], par["dimY"], par["dimX"])
+    par["C"] = np.zeros(C_shape, dtype=DTYPE)
+    phase_map_shape = (par["NSlice"], par["dimY"], par["dimX"])
+    par["phase_map"] = np.zeros(phase_map_shape, dtype=DTYPE)
 
     par_coils = {}
     par_coils["traj"] = traj_coil[None, ...]
@@ -73,47 +72,29 @@ def estimate_coil_sensitivities(data, trajectory, par):
     par_coils["Nproj"] = par["Nproj"]
     FFT = linop.NUFFT(par_coils)
 
-    combinedData = np.transpose(
-        data[None, :, None, ...], (1, 0, 2, 3, 4))
-    combinedData = np.reshape(
-                      combinedData,
-                      (1,
-                       par["NC"],
-                       1,
-                       par["NScan"] * par["Nproj"],
-                       par["nFE"])) * dcf_coil
+    combined_data_shape = (1, par["NC"], 1, par["NScan"] * par["Nproj"], par["nFE"])
+    combinedData = np.transpose(data[None, :, None, ...], (1, 0, 2, 3, 4))
+    combinedData = np.reshape(combinedData, combined_data_shape) * dcf_coil
     combinedData = FFT.adj(combinedData)
-    combinedData = np.fft.fft2(combinedData,
-                               norm='ortho')
+    combinedData = np.fft.fft2(combinedData, norm='ortho')
 
-    for i in range(0, (par["NSlice"])):
-        sys.stdout.write(
-            "Computing coil sensitivity map of slice %i \r" %
-            (i))
+    for i in range(par["NSlice"]):
+        sys.stdout.write("Computing coil sensitivity map of slice {} \r".format(str(i)))
         sys.stdout.flush()
 
-        result = nlinvns.nlinvns(
-                    np.squeeze(combinedData[:, :, i, ...]),
-                    nlinvNewtonSteps,
-                    True,
-                    nlinvRealConstr)
+        result = nlinvns.nlinvns(np.squeeze(combinedData[:, :, i, ...]), nlinvNewtonSteps, True, nlinvRealConstr)
 
         par["C"][:, i, :, :] = result[2:, -1, :, :]
-        sys.stdout.write("slice %i done \r"
-                         % (i))
+        sys.stdout.write("slice {} done \r".format(i))
         sys.stdout.flush()
+
         if not nlinvRealConstr:
-            par["phase_map"][i, :, :] = np.exp(
-                1j * np.angle(result[0, -1, :, :]))
+            par["phase_map"][i, :, :] = np.exp(1j * np.angle(result[0, -1, :, :]))
 
             # standardize coil sensitivity propar["file"]s
-    sumSqrC = np.sqrt(
-        np.sum(
-            (par["C"] *
-             np.conj(
-                par["C"])),
-            0))  # 4, 9, 128, 128
+    sumSqrC = np.sqrt(np.sum((par["C"] * np.conj(par["C"])), 0))  # 4, 9, 128, 128
     par["InScale"] = sumSqrC
+
     if par["NC"] == 1:
         par["C"] = sumSqrC
     else:

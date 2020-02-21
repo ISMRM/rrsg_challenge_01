@@ -47,72 +47,64 @@ class CGReco:
         self.operator = op
 
     def operator_lhs(self, inp):
-        return self.operator_rhs(self.operator.fwd(inp[None, ...]))
+        return self.operator_rhs(self.operator.forward(inp[None, ...]))
 
     def operator_rhs(self, inp):
         return self.operator.adj(inp)
 
-###############################################################################
-#   Start a Reconstruction ####################################################
-#   Call inner optimization ###################################################
-#   output: optimal value of x ################################################
-###############################################################################
     def optimize(self, data, guess=None, maxit=10, lambd=1e-8, tol=1e-5):
         if self.operator is None:
-            print("Please set an Linear operator "
-                  "using the SetOperator method.")
+            print("Please set an Linear operator using the SetOperator method.")
             return
+
         if guess is None:
-            guess = np.zeros(
-              (maxit+1, 1, 1, self.NSlice, self.dimY, self.dimX),
-              dtype=self.DTYPE)
+            guess_shape = (maxit+1, 1, 1, self.NSlice, self.dimY, self.dimX)
+            guess = np.zeros(guess_shape, dtype=self.DTYPE)
+
         start = time.time()
-        result = self.cg_solve(
-          guess, data[None, :, None, ...], maxit, lambd, tol)
+        result = self.cg_solve(guess, data[None, :, None, ...], maxit, lambd, tol)
         result[~np.isfinite(result)] = 0
-        end = time.time()-start
-        print("-"*80)
+        end = time.time() - start
+
+        print("-" * 80)
         print("Elapsed time: %f seconds" % (end))
-        print("-"*80)
+        print("-" * 80)
         print("done")
+
         return result
 
-###############################################################################
-#   Conjugate Gradient optimization ###########################################
-#   input: initial guess x ####################################################
-#          number of iterations iters #########################################
-#   output: optimal value of x ################################################
-###############################################################################
     def cg_solve(self, x, data, iters, lambd, tol):
+        # Conjugate gradient solver
 
-        b = np.zeros((self.NScan, 1, self.NSlice, self.dimY, self.dimX),
-                     self.DTYPE)
-        Ax = np.zeros((self.NScan, 1, self.NSlice, self.dimY, self.dimX),
-                      self.DTYPE)
+        # Allocate b and Ax..?
+        b = np.zeros((self.NScan, 1, self.NSlice, self.dimY, self.dimX), self.DTYPE)
+        Ax = np.zeros((self.NScan, 1, self.NSlice, self.dimY, self.dimX), self.DTYPE)
 
         b = self.operator_rhs(data)
         res = b
         p = res
-        delta = np.linalg.norm(res)**2/np.linalg.norm(b)**2
+        delta = np.linalg.norm(res) ** 2 / np.linalg.norm(b) ** 2
         self.res.append(delta)
         print("Initial Residuum: ", delta)
 
         for i in range(iters):
             Ax = self.operator_lhs(p)
-            Ax = Ax + lambd*p
-            alpha = (np.vdot(res, res)/(np.vdot(p, Ax)))
-            x[i+1] = (x[i] + alpha*p)
-            res_new = res - alpha*Ax
-            delta = np.linalg.norm(res_new)**2/np.linalg.norm(b)**2
+            Ax = Ax + lambd * p
+            alpha = np.vdot(res, res) / (np.vdot(p, Ax))
+            x[i + 1] = x[i] + alpha * p
+            res_new = res - alpha * Ax
+            delta = np.linalg.norm(res_new) ** 2 / np.linalg.norm(b) ** 2
             self.res.append(delta)
+
             if delta < tol:
                 print("Converged after %i iterations to %1.3e." % (i+1, delta))
                 return x[:i+1, ...]
+
             if not np.mod(i, 1):
                 print("Residuum at iter %i : %1.3e" % (i+1, delta), end='\r')
 
-            beta = (np.vdot(res_new, res_new) /
-                    np.vdot(res, res))
-            p = res_new+beta*p
-            (res, res_new) = (res_new, res)
+            beta = np.vdot(res_new, res_new) / np.vdot(res, res)
+            p = res_new + beta * p
+            res, res_new = res_new, res
+
         return x

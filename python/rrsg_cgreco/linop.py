@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """ This module holds the classes for different FFT operators.
 """
+
 import numpy as np
 from python.rrsg_cgreco._helper_fun.calckbkernel import calculate_keiser_bessel_kernel
 from python.rrsg_cgreco._helper_fun.goldcomp import cmp as goldcomp
@@ -23,7 +24,7 @@ class Operator(ABC):
       NC ():
         Number of complex coils
       NSlice ():
-        Number ofSlices
+        Number of Slices
       dimX ():
         X dimension of the parameter maps
       dimY ():
@@ -65,7 +66,7 @@ class Operator(ABC):
         self.DTYPE_real = DTYPE_real
 
     @abstractmethod
-    def fwd(self, inp):
+    def forward(self, inp):
         """ Apply operator from parameter space to measurement space.
 
         Apply the linear operator from parameter space to measurement space
@@ -192,8 +193,7 @@ class NUFFT(Operator):
         super().__init__(par, DTYPE, DTYPE_real)
         self.ogf = par["nFE"]/par["dimX"]
 
-        (self.kerneltable, kerneltable_FT, u) = calculate_keiser_bessel_kernel(
-            kwidth, self.ogf, par["nFE"], klength)
+        self.kerneltable, kerneltable_FT, u = calculate_keiser_bessel_kernel(kwidth, self.ogf, par["nFE"], klength)
 
         deapo = 1 / kerneltable_FT.astype(DTYPE_real)
         self.deapo = np.outer(deapo, deapo)
@@ -226,7 +226,7 @@ class NUFFT(Operator):
 
         return self._deapo_adj(ogkspace)
 
-    def fwd(self, inp):
+    def forward(self, inp):
         """ Perform the forward NUFFT operation.
 
         Args
@@ -251,7 +251,7 @@ class NUFFT(Operator):
                    int(self.gridsize/2-self.dimY/2):
                    int(self.gridsize/2+self.dimY/2),
                    int(self.gridsize/2-self.dimX/2):
-                   int(self.gridsize/2+self.dimX/2)]*self.deapo
+                   int(self.gridsize/2+self.dimX/2)] * self.deapo
 
     def _deapo_fwd(self, inp):
         out = np.zeros((self.NScan, self.NC, self.NSlice,
@@ -268,60 +268,59 @@ class NUFFT(Operator):
 
         gridcenter = self.gridsize/2
 
-        sg = np.zeros((self.NScan, self.NC, self.NSlice,
-                       self.gridsize, self.gridsize),
-                      dtype=self.DTYPE)
+        sg = np.zeros((self.NScan, self.NC, self.NSlice, self.gridsize, self.gridsize), dtype=self.DTYPE)
 
-        kdat = s*self.dcf
-        for iscan, iproj, ismpl in itertools.product(range(self.NScan),
-                                                     range(self.NProj),
-                                                     range(self.NSmpl)):
+        kdat = s * self.dcf
+
+        scan_proj_iterator = itertools.product(range(self.NScan), range(self.NProj), range(self.NSmpl))
+        for iscan, iproj, ismpl in scan_proj_iterator:
             kx = self.traj[iscan, iproj, ismpl].imag
             ky = self.traj[iscan, iproj, ismpl].real
 
-            ixmin = int((kx-self.kwidth)*self.gridsize + gridcenter)
-            ixmax = int((kx+self.kwidth)*self.gridsize + gridcenter) + 1
-            iymin = int((ky-self.kwidth)*self.gridsize + gridcenter)
-            iymax = int((ky+self.kwidth)*self.gridsize + gridcenter) + 1
+            ixmin = int((kx - self.kwidth) * self.gridsize + gridcenter)
+            ixmax = int((kx + self.kwidth) * self.gridsize + gridcenter) + 1
+            iymin = int((ky - self.kwidth) * self.gridsize + gridcenter)
+            iymax = int((ky + self.kwidth) * self.gridsize + gridcenter) + 1
 
             for gcount1 in np.arange(ixmin, ixmax+1):
-                dkx = (gcount1-gridcenter) / self.gridsize - kx
+                dkx = (gcount1 - gridcenter) / self.gridsize - kx
+
                 for gcount2 in np.arange(iymin, iymax+1):
-                    dky = (gcount2-gridcenter) / self.gridsize - ky
-                    dk = np.sqrt(dkx**2+dky**2)
-                    if (dk < self.kwidth):
+                    dky = (gcount2 - gridcenter) / self.gridsize - ky
+                    dk = np.sqrt(dkx ** 2 + dky ** 2)
 
-                        fracind = dk/self.kwidth*(self.nkrnlpts-1)
+                    if dk < self.kwidth:
+                        fracind = dk / self.kwidth * (self.nkrnlpts - 1)
                         kernelind = int(fracind)
-                        fracdk = fracind-kernelind
+                        fracdk = fracind - kernelind
 
-                        kern = self.kerneltable[kernelind]*(1-fracdk) +\
-                            self.kerneltable[kernelind+1]*fracdk
+                        kern = self.kerneltable[kernelind] * (1 - fracdk) + self.kerneltable[kernelind + 1] * fracdk
                         indx = gcount1
                         indy = gcount2
-                        if (gcount1 < 0):
-                            indx += self.gridsize
-                            indy = self.gridsize-indy
-                        if (gcount1 >= self.gridsize):
-                            indx -= self.gridsize
-                            indy = self.gridsize-indy
-                        if (gcount2 < 0):
-                            indy += self.gridsize
-                            indx = self.gridsize-indx
-                        if (gcount2 >= self.gridsize):
-                            indy -= self.gridsize
-                            indx = self.gridsize-indx
 
-                        sg[iscan, :, :, indy, indx] += \
-                            kern * kdat[iscan, :, :, iproj, ismpl]
+                        if gcount1 < 0:
+                            indx += self.gridsize
+                            indy = self.gridsize - indy
+
+                        if gcount1 >= self.gridsize:
+                            indx -= self.gridsize
+                            indy = self.gridsize - indy
+
+                        if gcount2 < 0:
+                            indy += self.gridsize
+                            indx = self.gridsize - indx
+
+                        if gcount2 >= self.gridsize:
+                            indy -= self.gridsize
+                            indx = self.gridsize - indx
+
+                        sg[iscan, :, :, indy, indx] += kern * kdat[iscan, :, :, iproj, ismpl]
         return sg
 
     def _invgrid_lut(self, sg):
         gridcenter = self.gridsize/2
 
-        s = np.zeros((self.NScan, self.NC, self.NSlice,
-                      self.NProj, self.NSmpl),
-                     dtype=self.DTYPE)
+        s = np.zeros((self.NScan, self.NC, self.NSlice, self.NProj, self.NSmpl), dtype=self.DTYPE)
 
         for iscan, iproj, ismpl in itertools.product(range(self.NScan),
                                                      range(self.NProj),
@@ -335,36 +334,39 @@ class NUFFT(Operator):
             iymax = int((ky+self.kwidth)*self.gridsize + gridcenter) + 1
 
             for gcount1 in np.arange(ixmin, ixmax+1):
-                dkx = (gcount1-gridcenter) / self.gridsize - kx
+                dkx = (gcount1 - gridcenter) / self.gridsize - kx
+
                 for gcount2 in np.arange(iymin, iymax+1):
-                    dky = (gcount2-gridcenter) / self.gridsize - ky
-                    dk = np.sqrt(dkx**2+dky**2)
-                    if (dk < self.kwidth):
+                    dky = (gcount2 - gridcenter) / self.gridsize - ky
+                    dk = np.sqrt(dkx ** 2 + dky ** 2)
+                    if dk < self.kwidth:
 
-                        fracind = dk/self.kwidth*(self.nkrnlpts-1)
+                        fracind = dk / self.kwidth * (self.nkrnlpts - 1)
                         kernelind = int(fracind)
-                        fracdk = fracind-kernelind
+                        fracdk = fracind - kernelind
 
-                        kern = self.kerneltable[kernelind]*(1-fracdk) +\
-                            self.kerneltable[kernelind+1]*fracdk
+                        kern = self.kerneltable[kernelind] * (1 - fracdk) + self.kerneltable[kernelind + 1] * fracdk
                         indx = gcount1
                         indy = gcount2
-                        if (gcount1 < 0):
-                            indx += self.gridsize
-                            indy = self.gridsize-indy
-                        if (gcount1 >= self.gridsize):
-                            indx -= self.gridsize
-                            indy = self.gridsize-indy
-                        if (gcount2 < 0):
-                            indy += self.gridsize
-                            indx = self.gridsize-indx
-                        if (gcount2 >= self.gridsize):
-                            indy -= self.gridsize
-                            indx = self.gridsize-indx
 
-                        s[iscan, :, :, iproj, ismpl] += \
-                            kern*sg[iscan, :, :, indy, indx]
-        return s*self.dcf
+                        if gcount1 < 0:
+                            indx += self.gridsize
+                            indy = self.gridsize - indy
+
+                        if gcount1 >= self.gridsize:
+                            indx -= self.gridsize
+                            indy = self.gridsize - indy
+
+                        if gcount2 < 0:
+                            indy += self.gridsize
+                            indx = self.gridsize - indx
+
+                        if gcount2 >= self.gridsize:
+                            indy -= self.gridsize
+                            indx = self.gridsize - indx
+
+                        s[iscan, :, :, iproj, ismpl] += kern * sg[iscan, :, :, indy, indx]
+        return s * self.dcf
 
 
 class MRIImagingModel(Operator):
@@ -403,12 +405,7 @@ class MRIImagingModel(Operator):
         factory and set after the object is created.
     """
 
-    def __init__(
-            self,
-            par,
-            trajectory,
-            DTYPE=np.complex64,
-            DTYPE_real=np.float32):
+    def __init__(self, par, trajectory, DTYPE=np.complex64, DTYPE_real=np.float32):
         """ NUFFT object constructor.
 
         Args
@@ -439,9 +436,9 @@ class MRIImagingModel(Operator):
         """
         super().__init__(par, DTYPE, DTYPE_real)
         par["traj"] = trajectory[None, ...]
-        self.NUFFT = NUFFT(par, DTYPE=DTYPE, DTYPE_real=DTYPE_real)
-        self.Coils = par["C"]
-        self.conjCoils = np.conj(par["C"])
+        self.nufft_obj = NUFFT(par, DTYPE=DTYPE, DTYPE_real=DTYPE_real)
+        self.coils = par["C"]
+        self.conjugate_coils = np.conj(par["C"])
 
     def adj(self, inp):
         """ Perform the inverse (adjo) NUFFT operation.
@@ -453,9 +450,9 @@ class MRIImagingModel(Operator):
           s (Numpy.Array):
             The non-uniformly gridded k-space
         """
-        return np.sum(self.NUFFT.adj(inp)*self.conjCoils, 1)
+        return np.sum(self.nufft_obj.adj(inp) * self.conjugate_coils, axis=1)
 
-    def fwd(self, inp):
+    def forward(self, inp):
         """ Perform the forward NUFFT operation.
 
         Args
@@ -465,4 +462,4 @@ class MRIImagingModel(Operator):
           sg (Numpy.Array):
             The complex image data.
         """
-        return self.NUFFT.fwd(inp*self.Coils)
+        return self.nufft_obj.forward(inp * self.coils)

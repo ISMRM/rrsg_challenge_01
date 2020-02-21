@@ -64,7 +64,7 @@ class OperatorKspaceRadial(unittest.TestCase):
         self.opinadj = self.opinadj.astype(DTYPE)
 
     def test_adj_outofplace(self):
-        outfwd = self.op.fwd(self.opinfwd)
+        outfwd = self.op.forward(self.opinfwd)
         outadj = self.op.adj(self.opinadj)
 
         a = np.vdot(outfwd.flatten(),
