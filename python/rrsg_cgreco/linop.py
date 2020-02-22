@@ -3,7 +3,7 @@
 """ Linear operators for MRI image reconstruction."""
 import numpy as np
 from rrsg_cgreco._helper_fun.calckbkernel import calculate_keiser_bessel_kernel
-from rrsg_cgreco._helper_fun.goldcomp import cmp as goldcomp
+from rrsg_cgreco._helper_fun.goldcomp import get_golden_angle_dcf as goldcomp
 from abc import ABC, abstractmethod
 import itertools
 
