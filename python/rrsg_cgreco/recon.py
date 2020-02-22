@@ -143,7 +143,7 @@ def read_data(path, acc, data_rawdata_key='rawdata', data_trajectory_key='trajec
     
 
     if len(trajectory.shape) < 3:
-        trajectory = trajcetory[None, ...]
+        trajectory = trajectory[None, ...]
 
     return rawdata, trajectory
 
