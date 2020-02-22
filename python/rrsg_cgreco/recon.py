@@ -232,7 +232,7 @@ def _run_reco(args):
     cgs = solver.CGReco(par)
     cgs.set_operator(MRImagingOperator)
     # Start reconstruction
-    recon_result = cgs.optimize(rawdata*par["dcf"])
+    recon_result = cgs.optimize(rawdata*par["dens_cor"])
     # Store results
     save_to_file(recon_result, args)
 
