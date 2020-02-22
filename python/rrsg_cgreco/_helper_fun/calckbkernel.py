@@ -23,7 +23,7 @@ limitations under the License.
 
 import warnings
 import numpy as np
-from rrsg_cgreco._helper_fun.kb import kb
+from rrsg_cgreco._helper_fun.kb import kaiser_bessel
 
 
 def calculate_keiser_bessel_kernel(kwidth, overgridfactor, G, klength=32):
@@ -72,7 +72,7 @@ def calculate_keiser_bessel_kernel(kwidth, overgridfactor, G, klength=32):
                     int(np.ceil(klength * w / 2))) /\
         (np.floor(klength * w / 2)) * w / 2 / G
 
-    kern = kb(u, kwidth, beta, G)
+    kern = kaiser_bessel(u, kwidth, beta, G)
     kern = kern/kern[u == 0]  # Normalize.
 
     ft_y = np.flip(kern)
