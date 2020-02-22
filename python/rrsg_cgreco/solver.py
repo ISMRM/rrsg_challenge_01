@@ -113,7 +113,7 @@ class CGReco:
         -------
           numpy.Array: Left hand side of CG normal equation
         """
-        return self.operator_rhs(self.operator.fwd(inp[None, ...]))
+        return self.operator_rhs(self.operator.forward(inp[None, ...]))
 
     def operator_rhs(self, inp):
         """
@@ -131,7 +131,7 @@ class CGReco:
         -------
           numpy.Array: Right hand side of CG normal equation
         """
-        return self.operator.adj(inp)
+        return self.operator.adjoint(inp)
 
 ###############################################################################
 #   Start a Reconstruction ####################################################
