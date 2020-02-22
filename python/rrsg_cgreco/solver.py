@@ -177,7 +177,7 @@ class CGReco:
               (maxit+1, 1, 1, self.num_slc, self.dimY, self.dimX),
               dtype=self.DTYPE)
         start = time.time()
-        result = self.cg_solve(
+        result = self._cg_solve(
           guess, data[None, :, None, ...], maxit, lambd, tol)
         result[~np.isfinite(result)] = 0
         end = time.time()-start
