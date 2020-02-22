@@ -23,9 +23,9 @@ limitations under the License.
 
 import numpy as np
 import sys
-from python.rrsg_cgreco._helper_fun import nlinvns
-from python.rrsg_cgreco._helper_fun import goldcomp
-from python.rrsg_cgreco import linop
+from rrsg_cgreco._helper_fun import nlinvns
+from rrsg_cgreco._helper_fun import goldcomp
+from rrsg_cgreco import linop
 
 # Estimates sensitivities and complex image.
 # (see Martin Uecker: Image reconstruction by regularized nonlinear
