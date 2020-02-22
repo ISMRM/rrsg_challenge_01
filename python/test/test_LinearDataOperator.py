@@ -13,6 +13,7 @@ except ImportError:
 import numpy as np
 import h5py
 from rrsg_cgreco import linop
+from rrsg_cgreco._helper_fun import goldcomp as goldcomp
 
 DTYPE = np.complex128
 DTYPE_real = np.float64
@@ -38,7 +39,11 @@ def setupPar(par):
               1j * np.random.randn(par["num_coils"],
                                    par["num_slc"],
                                    par["dimY"], par["dimX"])
-
+    
+    par["dens_cor"] = np.sqrt(np.array(goldcomp.get_golden_angle_dcf(
+                     par["traj"]), dtype=DTYPE_real)).astype(DTYPE_real)
+    par["dens_cor"] = np.require(np.abs(par["dens_cor"]),
+                                 DTYPE_real, requirements='C')
 
 class tmpArgs():
     pass
