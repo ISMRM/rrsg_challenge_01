@@ -65,7 +65,7 @@ class Operator(ABC):
         self.DTYPE_real = DTYPE_real
 
     @abstractmethod
-    def fwd(self, inp):
+    def forward(self, inp):
         """
         Apply operator from parameter space to measurement space.
 
@@ -90,7 +90,7 @@ class Operator(ABC):
         ...
 
     @abstractmethod
-    def adj(self, inp):
+    def adjoint(self, inp):
         """
         Apply operator from measurement space to parameter space.
 
@@ -198,7 +198,7 @@ class NUFFT(Operator):
         self.gridsize = par["num_reads"]
         self.kwidth = (kwidth / 2)/self.gridsize
 
-    def adj(self, inp):
+    def adjoint(self, inp):
         """
         Perform the adjoint (inverse) NUFFT operation.
 
@@ -223,7 +223,7 @@ class NUFFT(Operator):
 
         return self._deapo_adj(ogkspace)
 
-    def fwd(self, inp):
+    def forward(self, inp):
         """
         Perform the forward NUFFT operation.
 
@@ -424,7 +424,7 @@ class MRIImagingModel(Operator):
         self.coils = par["coils"]
         self.conj_coils = np.conj(par["coils"])
 
-    def adj(self, inp):
+    def adjoint(self, inp):
         """
         Perform the adjoint imaging operation.
 
@@ -439,9 +439,9 @@ class MRIImagingModel(Operator):
           s (Numpy.Array):
             The non-uniformly gridded k-space
         """
-        return np.sum(self.NUFFT.adj(inp)*self.conj_coils, 1)
+        return np.sum(self.NUFFT.adjoint(inp)*self.conj_coils, 1)
 
-    def fwd(self, inp):
+    def forward(self, inp):
         """
         Perform the forward imaging operation.
 
@@ -455,4 +455,4 @@ class MRIImagingModel(Operator):
           sg (Numpy.Array):
             The complex image data.
         """
-        return self.NUFFT.fwd(inp*self.coils)
+        return self.NUFFT.forward(inp*self.coils)
