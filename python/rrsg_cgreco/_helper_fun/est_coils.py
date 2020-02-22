@@ -94,7 +94,7 @@ def estimate_coil_sensitivities(data, trajectory, par):
                        1,
                        par["num_scans"] * par["num_proj"],
                        par["num_reads"])) * dens_cor_coil
-    combined_data = FFT.adj(combined_data)
+    combined_data = FFT.adjoint(combined_data)
     combined_data = np.fft.fft2(combined_data,
                                 norm='ortho')
 
