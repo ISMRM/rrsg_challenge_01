@@ -3,7 +3,6 @@
 """ Linear operators for MRI image reconstruction."""
 import numpy as np
 from rrsg_cgreco._helper_fun.calckbkernel import calculate_keiser_bessel_kernel
-from rrsg_cgreco._helper_fun.goldcomp import get_golden_angle_dcf as goldcomp
 from abc import ABC, abstractmethod
 import itertools
 
@@ -189,9 +188,7 @@ class NUFFT(Operator):
         deapo = 1 / kerneltable_FT.astype(DTYPE_real)
         self.deapo = np.outer(deapo, deapo)
 
-        dens_cor = np.sqrt(goldcomp(trajectory))
-
-        self.dens_cor = dens_cor
+        self.dens_cor = par["dens_cor"]
         self.traj = trajectory
 
         self.nkrnlpts = self.kerneltable.size
