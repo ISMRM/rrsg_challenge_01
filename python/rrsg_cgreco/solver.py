@@ -174,7 +174,7 @@ class CGReco:
 
         if guess is None:
             guess = np.zeros(
-              (maxit+1, 1, 1, self.NSlice, self.dimY, self.dimX),
+              (maxit+1, 1, 1, self.num_slc, self.dimY, self.dimX),
               dtype=self.DTYPE)
         start = time.time()
         result = self.cg_solve(
