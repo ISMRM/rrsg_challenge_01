@@ -70,7 +70,7 @@ def estimate_coil_sensitivities(data, trajectory, par):
     dens_cor_coil = np.sqrt(np.array(goldcomp.get_golden_angle_dcf(traj_coil), dtype=DTYPE))
 
     C_shape = (par["num_coils"], par["num_slc"], par["dimY"], par["dimX"])
-    par["C"] = np.zeros(C_shape, dtype=DTYPE)
+    par["coils"] = np.zeros(C_shape, dtype=DTYPE)
     phase_map_shape = (par["num_slc"], par["dimY"], par["dimX"])
     par["phase_map"] = np.zeros(phase_map_shape, dtype=DTYPE)
 
