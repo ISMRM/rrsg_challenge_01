@@ -230,7 +230,7 @@ def _run_reco(args):
     # Get operator
     MRImagingOperator = linop.MRIImagingModel(par, trajectory)
     cgs = solver.CGReco(par)
-    cgs.setOperator(MRImagingOperator)
+    cgs.set_operator(MRImagingOperator)
     # Start reconstruction
     recon_result = cgs.optimize(rawdata*par["dcf"])
     # Store results
