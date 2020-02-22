@@ -77,8 +77,8 @@ class OperatorKspaceRadial(unittest.TestCase):
         self.opinadj = self.opinadj.astype(DTYPE)
 
     def test_adj_outofplace(self):
-        outfwd = self.op.fwd(self.opinfwd)
-        outadj = self.op.adj(self.opinadj)
+        outfwd = self.op.forward(self.opinfwd)
+        outadj = self.op.adjoint(self.opinadj)
 
         a = np.vdot(outfwd.flatten(),
                     self.opinadj.flatten())/self.opinadj.size
@@ -124,7 +124,7 @@ class OperatorMRIRadial(unittest.TestCase):
 
     def test_adj_outofplace(self):
         outfwd = self.op.forward(self.opinfwd)
-        outadj = self.op.adj(self.opinadj)
+        outadj = self.op.adjoint(self.opinadj)
 
         a = np.vdot(outfwd.flatten(),
                     self.opinadj.flatten())/self.opinadj.size
