@@ -8,8 +8,7 @@ import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
-# # My own functions
-
+## My own functions
 
 def plot_3d_list(image_list, **kwargs):
     # Input of either a 2d list of np.arrays.. or a 3d list of np.arrays..
@@ -74,7 +73,8 @@ def plot_3d_list(image_list, **kwargs):
 
     return f
 
-# # #
+##
+
 path = 'python/rrsg_cgreco/rawdata_brain_radial_96proj_12ch.h5'
 acc = 1
 
@@ -110,25 +110,49 @@ rawdata = np.squeeze(rawdata.T)
 max_trajectory = 2 * np.max(trajectory[0])
 trajectory = np.require((trajectory[0] / max_trajectory + 1j * trajectory[1] / max_trajectory).T, requirements='C')
 
-# Comment: this is just a simple method.. could think of something better
+# Example of a couple of spokes
+plt.plot(np.real(trajectory).T, 'b', alpha=0.5)
+plt.plot(np.imag(trajectory).T, 'r', alpha=0.5)
+
+# Imshow of trajectory.. Not that usefull
 fig, ax = plt.subplots(1, 2, figsize=(20, 20))
 ax[0].imshow(np.real(trajectory))
 ax[0].set_title('real part')
 ax[1].imshow(np.imag(trajectory))
 ax[1].set_title('imaginary part')
 
-# Maybe something coloring..
-# This could be something..
-theta_range = np.arange(0, 2 * np.pi, np.pi/30)
-comb_range_x, comb_range_y = np.cos(theta_range), np.sin(theta_range)
-comb_z = np.array(comb_range_x) + 1j * np.array(comb_range_y)
-# 'Legend' of the colors
-plt.quiver(0, 0, np.real(comb_z), np.imag(comb_z), np.angle(comb_z))
-# The real mapping
-plt.quiver(np.real(trajectory), np.imag(trajectory), np.angle(trajectory))
+# Quiver plot of the trajectory. This is insightful
+fig, ax = plt.subplots()
+ax.set_xlim(-.5, .5)
+ax.set_ylim(-.5, .5)
+N = None
+X = np.real(trajectory[:N])
+Y = np.imag(trajectory[:N])
+U = np.real(trajectory[:N])
+V = np.imag(trajectory[:N])
+C = np.angle(trajectory[:N])
+Q = ax.quiver(X, Y, U, V, C)
 
-res_data = np.fft.fftn(rawdata, axes=(0, 1))
-plot_3d_list(res_data, augm='np.abs')
-plot_3d_list(rawdata[0:1], augm='np.abs')
-rawdata.shape
-plt.imshow(np.abs(res_data[0]))
+
+# Density compensation function
+from rrsg_cgreco._helper_fun import goldcomp as goldcomp
+res_dcf = np.sqrt(goldcomp.get_golden_angle_dcf(trajectory))
+plt.imshow(res_dcf)
+
+# Extracted parameters
+[n_ch, n_spokes, num_reads] = rawdata.shape
+ogf = input()
+par["ogf"] = float(eval(ogf))
+dimX, dimY = [int(num_reads/par["ogf"]), int(num_reads/par["ogf"])]
+
+par["num_coils"] = n_ch
+par["dimY"] = dimY
+par["dimX"] = dimX
+par["num_reads"] = num_reads
+par["num_proj"] = n_spokes
+par["num_scans"] = 1
+par["num_slc"] = 1
+
+# Example of regridden trajectory
+# Example of fft without regridding
+# Example of fft WITH regridding

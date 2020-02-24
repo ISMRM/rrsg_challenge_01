@@ -230,7 +230,7 @@ def read_data(
         )
       )
 
-    if len(trajectory.shape) < 3:
+    if trajectory.ndim < 3:
         trajectory = trajectory[None, ...]
 
     return rawdata, trajectory
@@ -250,7 +250,7 @@ def setup_parameter_dict(
         rawdata (np.complex64):
             The raw k-space data
         ogf (string):
-            Ratio between Cartesian cropped grid and full
+            Over-gridding factor. Ratio between Cartesian cropped grid and full
             regridded k-space grid.
 
     Returns
@@ -261,7 +261,7 @@ def setup_parameter_dict(
     """
     # Create empty dict
     par = {}
-    [nCh, nSpokes, num_reads] = rawdata.shape
+    [n_ch, n_spokes, num_reads] = rawdata.shape
 
     par["ogf"] = float(eval(ogf))
     dimX, dimY = [int(num_reads/par["ogf"]), int(num_reads/par["ogf"])]
@@ -287,11 +287,11 @@ def setup_parameter_dict(
             )
         )
 
-    par["num_coils"] = nCh
+    par["num_coils"] = n_ch
     par["dimY"] = dimY
     par["dimX"] = dimX
     par["num_reads"] = num_reads
-    par["num_proj"] = nSpokes
+    par["num_proj"] = n_spokes
     par["num_scans"] = 1
     par["num_slc"] = 1
 
