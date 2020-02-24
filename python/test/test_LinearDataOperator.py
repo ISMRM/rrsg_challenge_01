@@ -97,7 +97,8 @@ class OperatorKspaceRadial(unittest.TestCase):
                 par["num_slc"],
                 par["dimY"],
                 par["dimX"]
-                ) + 1j *
+                )
+            + 1j *
             np.random.randn(
                 par["num_scans"],
                 par["num_coils"],
@@ -113,7 +114,8 @@ class OperatorKspaceRadial(unittest.TestCase):
                 par["num_slc"],
                 par["num_proj"],
                 par["num_reads"]
-                ) + 1j *
+                )
+            + 1j *
             np.random.randn(
                 par["num_scans"],
                 par["num_coils"],
@@ -166,7 +168,8 @@ class OperatorMRIRadial(unittest.TestCase):
                 par["num_slc"],
                 par["dimY"],
                 par["dimX"]
-                ) + 1j *
+                )
+            + 1j *
             np.random.randn(
                 par["num_scans"],
                 par["num_slc"],
@@ -181,7 +184,8 @@ class OperatorMRIRadial(unittest.TestCase):
                 par["num_slc"],
                 par["num_proj"],
                 par["num_reads"]
-                ) + 1j *
+                )
+            + 1j *
             np.random.randn(
                 par["num_scans"],
                 par["num_coils"],

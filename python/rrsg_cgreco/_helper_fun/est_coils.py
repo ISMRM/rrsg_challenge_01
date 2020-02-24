@@ -95,16 +95,20 @@ def estimate_coil_sensitivities(data, trajectory, par):
 
     combined_data = np.transpose(
         data[None, :, None, ...], (1, 0, 2, 3, 4))
-    combined_data = np.reshape(
-                        combined_data,
-                        (
-                            1,
-                            par["num_coils"],
-                            1,
-                            par["num_scans"] * par["num_proj"],
-                            par["num_reads"]
-                            )
-                        ) * dens_cor_coil
+    combined_data = (
+        np.reshape(
+            combined_data,
+            (
+                1,
+                par["num_coils"],
+                1,
+                par["num_scans"] * par["num_proj"],
+                par["num_reads"]
+                )
+            )
+        *
+        dens_cor_coil
+        )
     combined_data = FFT.adjoint(combined_data)
     combined_data = np.fft.fft2(
         combined_data,
@@ -121,28 +125,42 @@ def estimate_coil_sensitivities(data, trajectory, par):
                     np.squeeze(combined_data[:, :, i, ...]),
                     nlinv_newton_steps,
                     True,
-                    nlinv_real_constr)
+                    nlinv_real_constr
+                    )
 
         par["coils"][:, i, :, :] = result[2:, -1, :, :]
-        sys.stdout.write("slice %i done \r"
-                         % (i))
+        sys.stdout.write(
+            "slice %i done \r"
+            % (i)
+            )
         sys.stdout.flush()
         if not nlinv_real_constr:
             par["phase_map"][i, :, :] = np.exp(
-                1j * np.angle(result[0, -1, :, :]))
+                1j
+                *
+                np.angle(
+                    result[0, -1, :, :]
+                    )
+                )
 
             # standardize coil sensitivity propar["file"]s
     sumSqrC = np.sqrt(
         np.sum(
-            (par["coils"] *
+            (par["coils"]
+             *
              np.conj(
-                par["coils"])),
-            0))  # 4, 9, 128, 128
+                 par["coils"]
+                 )
+             ),
+            0
+            )
+        )  # 4, 9, 128, 128
     par["in_scale"] = sumSqrC
     if par["num_coils"] == 1:
         par["coils"] = sumSqrC
     else:
         par["coils"] = (
-            par["coils"] /
+            par["coils"]
+            /
             np.tile(sumSqrC, (par["num_coils"], 1, 1, 1))
             )

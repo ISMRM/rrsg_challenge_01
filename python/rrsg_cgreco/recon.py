@@ -220,7 +220,8 @@ def read_data(
     trajectory = (
       np.require(
         (
-            trajectory[0] / norm_trajectory + 1j *
+            trajectory[0] / norm_trajectory
+            + 1j *
             trajectory[1] / norm_trajectory
             )
         .T,
@@ -323,8 +324,9 @@ def save_to_file(
     os.chdir("./output" + outdir)
     f = h5py.File(
         "CG_reco_inscale_" + str(args.inscale) + "_denscor_"
-        + str(args.denscor) + "_reduction_" + str(args.acc) +
-        "_acc_" + str(args.acc), "w"
+        + str(args.denscor) + "_reduction_" + str(args.acc)
+        + "_acc_" + str(args.acc),
+        "w"
         )
     f.create_dataset(
         "CG_reco",

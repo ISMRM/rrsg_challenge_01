@@ -85,7 +85,8 @@ def calculate_keiser_bessel_kernel(kwidth, overgridfactor, G, klength=32):
             np.floor(
                 klength * w / 2
                 )
-            ) * w / 2 / G
+            )
+        * w / 2 / G
         )
 
     kern = kaiser_bessel(u, kwidth, beta, G)
@@ -101,7 +102,8 @@ def calculate_keiser_bessel_kernel(kwidth, overgridfactor, G, klength=32):
                   ft_y
                   )
               )
-          ) * ft_y.size
+          )
+      * ft_y.size
       )
     x = np.linspace(-int(G/(2*a)), int(G/(2*a))-1, int(G/(a)))
 

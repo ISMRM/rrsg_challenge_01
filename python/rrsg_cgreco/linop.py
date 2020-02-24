@@ -259,10 +259,8 @@ class NUFFT(Operator):
     def _deapo_adj(self, inp):
         return inp[
             ...,
-            int(self.gridsize/2-self.dimY/2):
-            int(self.gridsize/2+self.dimY/2),
-            int(self.gridsize/2-self.dimX/2):
-            int(self.gridsize/2+self.dimX/2)
+            int(self.gridsize/2-self.dimY/2):int(self.gridsize/2+self.dimY/2),
+            int(self.gridsize/2-self.dimX/2):int(self.gridsize/2+self.dimX/2)
             ] * self.deapo
 
     def _deapo_fwd(self, inp):
@@ -278,10 +276,8 @@ class NUFFT(Operator):
 
         out[
             ...,
-            int(self.gridsize/2-self.dimY/2):
-            int(self.gridsize/2+self.dimY/2),
-            int(self.gridsize/2-self.dimX/2):
-            int(self.gridsize/2+self.dimX/2)
+            int(self.gridsize/2-self.dimY/2):int(self.gridsize/2+self.dimY/2),
+            int(self.gridsize/2-self.dimX/2):int(self.gridsize/2+self.dimX/2)
             ] = inp * self.deapo
         return out
 
