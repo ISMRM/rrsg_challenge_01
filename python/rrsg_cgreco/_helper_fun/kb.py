@@ -65,7 +65,8 @@ def kaiser_bessel(u, w, beta, G):
     uz = np.where(np.abs(u) <= w / (2 * G))  # Indices where u<w/2.
 
     if np.size(uz) > 0:  # Calculate y at indices uz.
-        x = beta * np.sqrt(1 - (2 * u[uz] * G / w) ** 2)  # Argument - see Jackson '91.
+        x = beta * np.sqrt(1 - (2 * u[uz] * G / w) ** 2)
+        # Argument - see Jackson '91.
         y[uz] = G * i0(x) / w
 
     return y

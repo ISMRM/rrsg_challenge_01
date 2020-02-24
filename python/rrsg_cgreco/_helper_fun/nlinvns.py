@@ -20,7 +20,6 @@ import pyfftw
 
 
 def nlinvns(Y, n, *arg):  # *returnProfiles,**realConstr):
-
     nrarg = len(arg)
     if nrarg == 2:
         returnProfiles = arg[0]

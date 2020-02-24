@@ -17,24 +17,24 @@ class Operator(ABC):
 
     Attributes
     ----------
-      num_scans (int):
-        Number of total measurements (Scans)
-      num_coils (int):
-        Number of complex coils
-      num_slc (int):
-        Number ofSlices
-      dimX (int):
-        X dimension of the parameter maps
-      dimY (int):
-        Y dimension of the parameter maps
-      N (int):
-        N number of samples per readout
-      num_proj (int):
-        Number of readouts
-      DTYPE (numpy.type):
-        The complex value precision. Defaults to complex64
-      DTYPE_real (numpy.type):
-        The real value precision. Defaults to float32
+        num_scans (int):
+            Number of total measurements (Scans)
+        num_coils (int):
+            Number of complex coils
+        num_slc (int):
+            Number ofSlices
+        dimX (int):
+            X dimension of the parameter maps
+        dimY (int):
+            Y dimension of the parameter maps
+        N (int):
+            N number of samples per readout
+        num_proj (int):
+            Number of readouts
+        DTYPE (numpy.type):
+            The complex value precision. Defaults to complex64
+        DTYPE_real (numpy.type):
+            The real value precision. Defaults to float32
     """
 
     def __init__(self, par, DTYPE=np.complex64, DTYPE_real=np.float32):
@@ -43,15 +43,17 @@ class Operator(ABC):
 
         Args
         ----
-          par (dict): A python dict containing the necessary information to
-            setup the object. Needs to contain the number of slices (num_slc),
-            number of scans (num_scans), image dimensions (dimX, dimY),
-            number of coils (num_coils),
-            sampling pos (N) and read outs (num_proj).
-          DTYPE (numpy.type):
-            The complex value precision. Defaults to complex64
-          DTYPE_real (numpy.type):
-            The real value precision. Defaults to float32
+            par (dict):
+                A python dict containing the necessary information to
+                setup the object. Needs to contain the number of slices
+                (num_slc),
+                number of scans (num_scans), image dimensions (dimX, dimY),
+                number of coils (num_coils),
+                sampling pos (N) and read outs (num_proj).
+            DTYPE (numpy.type):
+                The complex value precision. Defaults to complex64
+            DTYPE_real (numpy.type):
+                The real value precision. Defaults to float32
         """
         self.num_slc = par["num_slc"]
         self.num_scans = par["num_scans"]
@@ -76,15 +78,16 @@ class Operator(ABC):
 
         Args
         ----
-          inp (Numpy.Array):
-            The complex parameter space data which is used as input.
-          wait_for (list of PyopenCL.Event):
-            A List of PyOpenCL events to wait for.
+            inp (Numpy.Array):
+                The complex parameter space data which is used as input.
+            wait_for (list of PyopenCL.Event):
+                A List of PyOpenCL events to wait for.
 
         Returns
         -------
-          Numpy.Array: A PyOpenCL array containing the result of the
-          computation.
+              Numpy.Array:
+                  A PyOpenCL array containing the result of the
+                  computation.
         """
         ...
 
@@ -101,15 +104,16 @@ class Operator(ABC):
 
         Args
         ----
-          inp (Numpy.Array):
-            The complex measurement space which is used as input.
-          wait_for (list of PyopenCL.Event):
-            A List of PyOpenCL events to wait for.
+            inp (Numpy.Array):
+                The complex measurement space which is used as input.
+            wait_for (list of PyopenCL.Event):
+                A List of PyOpenCL events to wait for.
 
         Returns
         -------
-          Numpy.Array: A PyOpenCL array containing the result of the
-          computation.
+            Numpy.Array:
+                A PyOpenCL array containing the result of the
+                computation.
         """
         ...
 
@@ -124,25 +128,25 @@ class NUFFT(Operator):
 
     Attributes
     ----------
-      traj (Numpy.Array):
-        The comlex sampling trajectory
-      dens_cor (Numpy.Array):
-        The densitiy compenation function
-      ogf (float):
-        The overgriddingfactor for non-cartesian k-spaces.
-      fft_scale (float32):
-        The scaling factor to achieve a good adjoness of the forward and
-        backward FFT.
-      kerneltable (Numpy.Array):
-        The gridding lookup table
-      deapo (Numpy.Array):
-        The deapodization lookup table
-      nkrnlpts (int):
-        The number of points in the precomputed gridding kernel
-      gridsize (int):
-        The size of the grid to interpolate to
-      kwidth (float):
-        The half width of the kernel relative to the number of gridpoints
+        traj (Numpy.Array):
+            The comlex sampling trajectory
+        dens_cor (Numpy.Array):
+            The densitiy compenation function
+        ogf (float):
+            The overgriddingfactor for non-cartesian k-spaces.
+        fft_scale (float32):
+            The scaling factor to achieve a good adjoness of the forward and
+            backward FFT.
+        kerneltable (Numpy.Array):
+            The gridding lookup table
+        deapo (Numpy.Array):
+            The deapodization lookup table
+        nkrnlpts (int):
+            The number of points in the precomputed gridding kernel
+        gridsize (int):
+            The size of the grid to interpolate to
+        kwidth (float):
+            The half width of the kernel relative to the number of gridpoints
     """
 
     def __init__(
@@ -155,35 +159,42 @@ class NUFFT(Operator):
                 2),
             klength=2000,
             DTYPE=np.complex64,
-            DTYPE_real=np.float32):
+            DTYPE_real=np.float32
+            ):
         """
         NUFFT object constructor.
 
         Args
         ----
-          par (dict): A python dict containing the necessary information to
-            setup the object. Needs to contain the number of slices (num_slc),
-            number of scans (num_scans), image dimensions (dimX, dimY),
-            number of
-            coils (num_coils), sampling pos (N) and read outs (num_proj).
-          trajectory (numpy.array):
-            Complex trajectory information for kx/ky points.
-          kwidth (int):
-            The width of the sampling kernel for regridding of non-uniform
-            kspace samples.
-          klength (int):
-            The length of the kernel lookup table which samples the contineous
-            gridding kernel.
-          DTYPE (Numpy.Type):
-            The comlex precission type. Currently complex64 is used.
-          DTYPE_real (Numpy.Type):
-            The real precission type. Currently float32 is used.
+            par (dict):
+                A python dict containing the necessary information to
+                setup the object. Needs to contain the number of slices
+                (num_slc),
+                number of scans (num_scans), image dimensions (dimX, dimY),
+                number of coils (num_coils), sampling pos (N) and
+                read outs (num_proj).
+            trajectory (numpy.array):
+                Complex trajectory information for kx/ky points.
+            kwidth (int):
+                The width of the sampling kernel for regridding of non-uniform
+                kspace samples.
+            klength (int):
+                The length of the kernel lookup table which samples the
+                contineous gridding kernel.
+            DTYPE (Numpy.Type):
+                The comlex precission type. Currently complex64 is used.
+            DTYPE_real (Numpy.Type):
+                The real precission type. Currently float32 is used.
         """
         super().__init__(par, DTYPE, DTYPE_real)
         self.ogf = par["num_reads"]/par["dimX"]
 
         (self.kerneltable, kerneltable_FT, u) = calculate_keiser_bessel_kernel(
-            kwidth, self.ogf, par["num_reads"], klength)
+            kwidth,
+            self.ogf,
+            par["num_reads"],
+            klength
+            )
 
         deapo = 1 / kerneltable_FT.astype(DTYPE_real)
         self.deapo = np.outer(deapo, deapo)
@@ -206,10 +217,10 @@ class NUFFT(Operator):
 
         Args
         ----
-          sg (Numpy.Array):
-            The complex image data.
-          s (Numpy.Array):
-            The non-uniformly gridded k-space
+            sg (Numpy.Array):
+                The complex image data.
+            s (Numpy.Array):
+                The non-uniformly gridded k-space
         """
         # Grid k-space
         ogkspace = self._grid_lut(inp)
@@ -230,10 +241,10 @@ class NUFFT(Operator):
 
         Args
         ----
-          s (Numpy.Array):
-            The non-uniformly gridded k-space.
-          sg (Numpy.Array):
-            The complex image data.
+            s (Numpy.Array):
+                The non-uniformly gridded k-space.
+            sg (Numpy.Array):
+                The complex image data.
         """
         # Deapodization and Scaling
         ogkspace = self._deapo_fwd(inp)
@@ -246,35 +257,56 @@ class NUFFT(Operator):
         return self._invgrid_lut(ogkspace)
 
     def _deapo_adj(self, inp):
-        return inp[...,
-                   int(self.gridsize/2-self.dimY/2):
-                   int(self.gridsize/2+self.dimY/2),
-                   int(self.gridsize/2-self.dimX/2):
-                   int(self.gridsize/2+self.dimX/2)]*self.deapo
-
-    def _deapo_fwd(self, inp):
-        out = np.zeros((self.num_scans, self.num_coils, self.num_slc,
-                        self.gridsize, self.gridsize),
-                       dtype=self.DTYPE)
-        out[...,
+        return inp[
+            ...,
             int(self.gridsize/2-self.dimY/2):
             int(self.gridsize/2+self.dimY/2),
             int(self.gridsize/2-self.dimX/2):
-            int(self.gridsize/2+self.dimX/2)] = inp*self.deapo
+            int(self.gridsize/2+self.dimX/2)
+            ] * self.deapo
+
+    def _deapo_fwd(self, inp):
+        out = np.zeros(
+            (
+                self.num_scans,
+                self.num_coils,
+                self.num_slc,
+                self.gridsize,
+                self.gridsize),
+            dtype=self.DTYPE
+            )
+
+        out[
+            ...,
+            int(self.gridsize/2-self.dimY/2):
+            int(self.gridsize/2+self.dimY/2),
+            int(self.gridsize/2-self.dimX/2):
+            int(self.gridsize/2+self.dimX/2)
+            ] = inp * self.deapo
         return out
 
     def _grid_lut(self, s):
 
         gridcenter = self.gridsize/2
 
-        sg = np.zeros((self.num_scans, self.num_coils, self.num_slc,
-                       self.gridsize, self.gridsize),
-                      dtype=self.DTYPE)
+        sg = np.zeros(
+            (
+                self.num_scans,
+                self.num_coils,
+                self.num_slc,
+                self.gridsize,
+                self.gridsize
+                ),
+            dtype=self.DTYPE
+            )
 
         kdat = s*self.dens_cor
-        for iscan, iproj, ismpl in itertools.product(range(self.num_scans),
-                                                     range(self.num_proj),
-                                                     range(self.num_reads)):
+        for iscan, iproj, ismpl in itertools.product(
+                range(self.num_scans),
+                range(self.num_proj),
+                range(self.num_reads)
+                ):
+
             kx = self.traj[iscan, iproj, ismpl].imag
             ky = self.traj[iscan, iproj, ismpl].real
 
@@ -295,7 +327,10 @@ class NUFFT(Operator):
                         kernelind = int(fracind)
                         fracdk = fracind - kernelind
 
-                        kern = self.kerneltable[kernelind] * (1 - fracdk) + self.kerneltable[kernelind + 1] * fracdk
+                        kern = (
+                            self.kerneltable[kernelind] * (1 - fracdk) +
+                            self.kerneltable[kernelind + 1] * fracdk
+                            )
                         indx = gcount1
                         indy = gcount2
 
@@ -315,19 +350,37 @@ class NUFFT(Operator):
                             indy -= self.gridsize
                             indx = self.gridsize - indx
 
-                        sg[iscan, :, :, indy, indx] += kern * kdat[iscan, :, :, iproj, ismpl]
+                        sg[iscan, :, :, indy, indx] += (
+                            kern * kdat[
+                                iscan,
+                                :,
+                                :,
+                                iproj,
+                                ismpl
+                                ]
+                            )
         return sg
 
     def _invgrid_lut(self, sg):
         gridcenter = self.gridsize/2
 
-        s = np.zeros((self.num_scans, self.num_coils, self.num_slc,
-                      self.num_proj, self.num_reads),
-                     dtype=self.DTYPE)
+        s = np.zeros(
+            (
+                self.num_scans,
+                self.num_coils,
+                self.num_slc,
+                self.num_proj,
+                self.num_reads
+                ),
+            dtype=self.DTYPE
+            )
 
-        for iscan, iproj, ismpl in itertools.product(range(self.num_scans),
-                                                     range(self.num_proj),
-                                                     range(self.num_reads)):
+        for iscan, iproj, ismpl in itertools.product(
+                range(self.num_scans),
+                range(self.num_proj),
+                range(self.num_reads)
+                ):
+
             kx = self.traj[iscan, iproj, ismpl].imag
             ky = self.traj[iscan, iproj, ismpl].real
 
@@ -348,7 +401,10 @@ class NUFFT(Operator):
                         kernelind = int(fracind)
                         fracdk = fracind - kernelind
 
-                        kern = self.kerneltable[kernelind] * (1 - fracdk) + self.kerneltable[kernelind + 1] * fracdk
+                        kern = (
+                            self.kerneltable[kernelind] * (1 - fracdk) +
+                            self.kerneltable[kernelind + 1] * fracdk
+                            )
                         indx = gcount1
                         indy = gcount2
 
@@ -382,12 +438,12 @@ class MRIImagingModel(Operator):
 
     Attributes
     ----------
-      coils (Numpy.Array):
-        The comlex coil sensitivity profiles
-      conj_coils (Numpy.Array):
-        The precomputed comlex conjugate coil sensitivity profiles
-      NUFFT (linop.NUFFT):
-        The NUFFT object to perform gridding.
+        coils (Numpy.Array):
+            The comlex coil sensitivity profiles
+        conj_coils (Numpy.Array):
+            The precomputed comlex conjugate coil sensitivity profiles
+        NUFFT (linop.NUFFT):
+            The NUFFT object to perform gridding.
     """
 
     def __init__(
@@ -395,29 +451,36 @@ class MRIImagingModel(Operator):
             par,
             trajectory,
             DTYPE=np.complex64,
-            DTYPE_real=np.float32):
+            DTYPE_real=np.float32
+            ):
         """
         NUFFT object constructor.
 
         Args
         ----
-          par (dict): A python dict containing the necessary information to
-            setup the object. Needs to contain the number of slices (num_slc),
-            number of scans (num_scans), image dimensions (dimX, dimY),
-            number of coils (num_coils), sampling pos (N)
-            and read outs (num_proj) and the complex
-            coil sensitivities (C).
-          trajectory (numpy.array):
-            Complex trajectory information for kx/ky points.
-          DTYPE (Numpy.Type):
-            The comlex precission type. Currently complex64 is used.
-          DTYPE_real (Numpy.Type):
-            The real precission type. Currently float32 is used.
+            par (dict):
+                A python dict containing the necessary information to
+                setup the object. Needs to contain the number of slices
+                (num_slc),
+                number of scans (num_scans), image dimensions (dimX, dimY),
+                number of coils (num_coils), sampling pos (N)
+                and read outs (num_proj) and the complex
+                coil sensitivities (C).
+            trajectory (numpy.array):
+                Complex trajectory information for kx/ky points.
+            DTYPE (Numpy.Type):
+                The comlex precission type. Currently complex64 is used.
+            DTYPE_real (Numpy.Type):
+                The real precission type. Currently float32 is used.
         """
         super().__init__(par, DTYPE, DTYPE_real)
 
-        self.NUFFT = NUFFT(par, trajectory,
-                           DTYPE=DTYPE, DTYPE_real=DTYPE_real)
+        self.NUFFT = NUFFT(
+            par,
+            trajectory,
+            DTYPE=DTYPE,
+            DTYPE_real=DTYPE_real
+            )
         self.coils = par["coils"]
         self.conj_coils = np.conj(par["coils"])
 
@@ -447,9 +510,9 @@ class MRIImagingModel(Operator):
 
         Args
         ----
-          s (Numpy.Array):
-            The non-uniformly gridded k-space.
-          sg (Numpy.Array):
-            The complex image data.
+            s (Numpy.Array):
+                The non-uniformly gridded k-space.
+            sg (Numpy.Array):
+                The complex image data.
         """
         return self.NUFFT.forward(inp*self.coils)

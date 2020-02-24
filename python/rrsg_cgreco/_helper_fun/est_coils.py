@@ -51,23 +51,31 @@ def estimate_coil_sensitivities(data, trajectory, par):
 
     Args
     ----
-        data (numpy.array):
-          complex k-space data
-        trajectory (numpy.array):
-          complex trajectory information
-        par:
-          par (dict): A python dict containing the necessary information to
-            setup the object. Needs to contain the number of slices (num_slc),
-            number of scans (num_scans), image dimensions (dimX, dimY), number
-            of coils (num_coils), sampling pos (N) and read outs (NProj).
-
+          data (numpy.array):
+              complex k-space data
+          trajectory (numpy.array):
+              complex trajectory information
+          par:
+              par (dict):
+                  A python dict containing the necessary information to
+                  setup the object. Needs to contain the number of slices
+                  (num_slc), number of scans (num_scans),
+                  image dimensions (dimX, dimY), number of coils (num_coils),
+                  sampling pos (N) and read outs (NProj).
     """
     nlinv_newton_steps = 6
     nlinv_real_constr = False
 
     new_shape = (par["num_scans"] * par["num_proj"], par["num_reads"])
     traj_coil = np.reshape(trajectory, new_shape)
-    dens_cor_coil = np.sqrt(np.array(goldcomp.get_golden_angle_dcf(traj_coil), dtype=DTYPE))
+    dens_cor_coil = np.sqrt(
+        np.array(
+            goldcomp.get_golden_angle_dcf(
+                traj_coil
+                ),
+            dtype=DTYPE
+            )
+        )
 
     C_shape = (par["num_coils"], par["num_slc"], par["dimY"], par["dimX"])
     par["coils"] = np.zeros(C_shape, dtype=DTYPE)
@@ -88,20 +96,25 @@ def estimate_coil_sensitivities(data, trajectory, par):
     combined_data = np.transpose(
         data[None, :, None, ...], (1, 0, 2, 3, 4))
     combined_data = np.reshape(
-                      combined_data,
-                      (1,
-                       par["num_coils"],
-                       1,
-                       par["num_scans"] * par["num_proj"],
-                       par["num_reads"])) * dens_cor_coil
+                        combined_data,
+                        (
+                            1,
+                            par["num_coils"],
+                            1,
+                            par["num_scans"] * par["num_proj"],
+                            par["num_reads"]
+                            )
+                        ) * dens_cor_coil
     combined_data = FFT.adjoint(combined_data)
-    combined_data = np.fft.fft2(combined_data,
-                                norm='ortho')
+    combined_data = np.fft.fft2(
+        combined_data,
+        norm='ortho')
 
     for i in range(0, (par["num_slc"])):
         sys.stdout.write(
             "Computing coil sensitivity map of slice %i \r" %
-            (i))
+            (i)
+            )
         sys.stdout.flush()
 
         result = nlinvns.nlinvns(
@@ -129,5 +142,7 @@ def estimate_coil_sensitivities(data, trajectory, par):
     if par["num_coils"] == 1:
         par["coils"] = sumSqrC
     else:
-        par["coils"] = par["coils"] / \
-          np.tile(sumSqrC, (par["num_coils"], 1, 1, 1))
+        par["coils"] = (
+            par["coils"] /
+            np.tile(sumSqrC, (par["num_coils"], 1, 1, 1))
+            )

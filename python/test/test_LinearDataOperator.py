@@ -29,21 +29,45 @@ def setupPar(par):
     par["num_reads"] = 512
     file = h5py.File('./python/test/smalltest.h5')
 
-    par["traj"] = file['real_traj'][()].astype(DTYPE) + \
-        1j*file['imag_traj'][()].astype(DTYPE)
-    print(par["traj"].shape)
+    par["traj"] = (
+        file['real_traj'][()].astype(DTYPE) + 1j *
+        file['imag_traj'][()].astype(DTYPE)
+        )
 
-    par["coils"] = np.random.randn(par["num_coils"],
-                                   par["num_slc"],
-                                   par["dimY"], par["dimX"]) +\
-              1j * np.random.randn(par["num_coils"],
-                                   par["num_slc"],
-                                   par["dimY"], par["dimX"])
-    
-    par["dens_cor"] = np.sqrt(np.array(goldcomp.get_golden_angle_dcf(
-                     par["traj"]), dtype=DTYPE_real)).astype(DTYPE_real)
-    par["dens_cor"] = np.require(np.abs(par["dens_cor"]),
-                                 DTYPE_real, requirements='C')
+    par["coils"] = (
+        np.random.randn(
+            par["num_coils"],
+            par["num_slc"],
+            par["dimY"],
+            par["dimX"]
+            ) + 1j *
+        np.random.randn(
+            par["num_coils"],
+            par["num_slc"],
+            par["dimY"],
+            par["dimX"]
+            )
+        )
+
+    par["dens_cor"] = (
+        np.sqrt(
+            np.array(
+                goldcomp.get_golden_angle_dcf(
+                         par["traj"]
+                         ),
+                dtype=DTYPE_real
+                )
+            )
+        .astype(DTYPE_real)
+        )
+    par["dens_cor"] = np.require(
+        np.abs(
+            par["dens_cor"]
+            ),
+        DTYPE_real,
+        requirements='C'
+        )
+
 
 class tmpArgs():
     pass
@@ -63,20 +87,41 @@ class OperatorKspaceRadial(unittest.TestCase):
             par,
             par["traj"],
             DTYPE=DTYPE,
-            DTYPE_real=DTYPE_real)
+            DTYPE_real=DTYPE_real
+            )
 
-        self.opinfwd = np.random.randn(par["num_scans"], par["num_coils"],
-                                       par["num_slc"],
-                                       par["dimY"], par["dimX"]) +\
-            1j * np.random.randn(par["num_scans"], par["num_coils"],
-                                 par["num_slc"],
-                                 par["dimY"], par["dimX"])
-        self.opinadj = np.random.randn(par["num_scans"], par["num_coils"],
-                                       par["num_slc"],
-                                       par["num_proj"], par["num_reads"]) +\
-            1j * np.random.randn(par["num_scans"], par["num_coils"],
-                                 par["num_slc"],
-                                 par["num_proj"], par["num_reads"])
+        self.opinfwd = (
+            np.random.randn(
+                par["num_scans"],
+                par["num_coils"],
+                par["num_slc"],
+                par["dimY"],
+                par["dimX"]
+                ) + 1j *
+            np.random.randn(
+                par["num_scans"],
+                par["num_coils"],
+                par["num_slc"],
+                par["dimY"],
+                par["dimX"]
+                )
+            )
+        self.opinadj = (
+            np.random.randn(
+                par["num_scans"],
+                par["num_coils"],
+                par["num_slc"],
+                par["num_proj"],
+                par["num_reads"]
+                ) + 1j *
+            np.random.randn(
+                par["num_scans"],
+                par["num_coils"],
+                par["num_slc"],
+                par["num_proj"],
+                par["num_reads"]
+                )
+            )
 
         self.opinfwd = self.opinfwd.astype(DTYPE)
         self.opinadj = self.opinadj.astype(DTYPE)
@@ -85,10 +130,14 @@ class OperatorKspaceRadial(unittest.TestCase):
         outfwd = self.op.forward(self.opinfwd)
         outadj = self.op.adjoint(self.opinadj)
 
-        a = np.vdot(outfwd.flatten(),
-                    self.opinadj.flatten())/self.opinadj.size
-        b = np.vdot(self.opinfwd.flatten(),
-                    outadj.flatten())/self.opinadj.size
+        a = np.vdot(
+                outfwd.flatten(),
+                self.opinadj.flatten()
+                ) / self.opinadj.size
+        b = np.vdot(
+                self.opinfwd.flatten(),
+                outadj.flatten()
+                ) / self.opinadj.size
 
         print("Adjointness: %.2e+j%.2e" % ((a - b).real, (a - b).imag))
 
@@ -111,18 +160,36 @@ class OperatorMRIRadial(unittest.TestCase):
             DTYPE=DTYPE,
             DTYPE_real=DTYPE_real)
 
-        self.opinfwd = np.random.randn(par["num_scans"],
-                                       par["num_slc"],
-                                       par["dimY"], par["dimX"]) +\
-            1j * np.random.randn(par["num_scans"],
-                                 par["num_slc"],
-                                 par["dimY"], par["dimX"])
-        self.opinadj = np.random.randn(par["num_scans"], par["num_coils"],
-                                       par["num_slc"],
-                                       par["num_proj"], par["num_reads"]) +\
-            1j * np.random.randn(par["num_scans"], par["num_coils"],
-                                 par["num_slc"],
-                                 par["num_proj"], par["num_reads"])
+        self.opinfwd = (
+            np.random.randn(
+                par["num_scans"],
+                par["num_slc"],
+                par["dimY"],
+                par["dimX"]
+                ) + 1j *
+            np.random.randn(
+                par["num_scans"],
+                par["num_slc"],
+                par["dimY"],
+                par["dimX"]
+                )
+            )
+        self.opinadj = (
+            np.random.randn(
+                par["num_scans"],
+                par["num_coils"],
+                par["num_slc"],
+                par["num_proj"],
+                par["num_reads"]
+                ) + 1j *
+            np.random.randn(
+                par["num_scans"],
+                par["num_coils"],
+                par["num_slc"],
+                par["num_proj"],
+                par["num_reads"]
+                )
+            )
 
         self.opinfwd = self.opinfwd.astype(DTYPE)
         self.opinadj = self.opinadj.astype(DTYPE)
@@ -131,10 +198,14 @@ class OperatorMRIRadial(unittest.TestCase):
         outfwd = self.op.forward(self.opinfwd)
         outadj = self.op.adjoint(self.opinadj)
 
-        a = np.vdot(outfwd.flatten(),
-                    self.opinadj.flatten())/self.opinadj.size
-        b = np.vdot(self.opinfwd.flatten(),
-                    outadj.flatten())/self.opinadj.size
+        a = np.vdot(
+                outfwd.flatten(),
+                self.opinadj.flatten()
+                ) / self.opinadj.size
+        b = np.vdot(
+                self.opinfwd.flatten(),
+                outadj.flatten()
+                ) / self.opinadj.size
 
         print("Adjointness: %.2e+j%.2e" % ((a - b).real, (a - b).imag))
 

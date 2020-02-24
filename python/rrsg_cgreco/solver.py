@@ -35,20 +35,20 @@ class CGReco:
 
     Attributes
     ----------
-      dimX (int):
-        X dimension of the parameter maps
-      dimY (int):
-        Y dimension of the parameter maps
-      num_coils (int):
-        Number of coils
-      NScan (int):
-        Number of Scans
-      NSlice (ind):
-        Number of Slices
-      DTYPE (numpy.type):
-        The complex value precision. Defaults to complex64
-      DTYPE_real (numpy.type):
-        The real value precision. Defaults to float32
+        dimX (int):
+            X dimension of the parameter maps
+        dimY (int):
+            Y dimension of the parameter maps
+        num_coils (int):
+            Number of coils
+        NScan (int):
+            Number of Scans
+       NSlice (ind):
+           Number of Slices
+        DTYPE (numpy.type):
+            The complex value precision. Defaults to complex64
+        DTYPE_real (numpy.type):
+            The real value precision. Defaults to float32
     """
 
     def __init__(self, par, DTYPE=np.complex64, DTYPE_real=np.float32):
@@ -57,15 +57,17 @@ class CGReco:
 
         Args
         ----
-          par (dict): A python dict containing the necessary information to
-            setup the object. Needs to contain the number of slices (NSlice),
-            number of scans (NScan), image dimensions (dimX, dimY), number of
-            coils (num_coils), sampling pos (N) and read outs (NProj) and the
-            complex coil sensitivities (C).
-          DTYPE (Numpy.Type):
-            The comlex precission type. Currently complex64 is used.
-          DTYPE_real (Numpy.Type):
-            The real precission type. Currently float32 is used.
+            par (dict):
+                A python dict containing the necessary information to
+                setup the object. Needs to contain the number of slices
+                (NSlice), number of scans (NScan), image dimensions
+                (dimX, dimY), number of coils (num_coils),
+                sampling pos (N) and read outs (NProj) and the
+                complex coil sensitivities (C).
+            DTYPE (Numpy.Type):
+                The comlex precission type. Currently complex64 is used.
+            DTYPE_real (Numpy.Type):
+                The real precission type. Currently float32 is used.
         """
         self.dimX = par["dimX"]
         self.dimY = par["dimY"]
@@ -91,8 +93,8 @@ class CGReco:
 
         Args
         ----
-          op (linop.Operator):
-            The linear operator to be used for CG reconstruction.
+            op (linop.Operator):
+                The linear operator to be used for CG reconstruction.
 
         """
         self.operator = op
@@ -106,12 +108,12 @@ class CGReco:
 
         Args
         ----
-          inp (numpy.Array):
-            The complex image space data.
+            inp (numpy.Array):
+               The complex image space data.
 
         Returns
         -------
-          numpy.Array: Left hand side of CG normal equation
+            numpy.Array: Left hand side of CG normal equation
         """
         return self.operator_rhs(self.operator.forward(inp[None, ...]))
 
@@ -124,12 +126,12 @@ class CGReco:
 
         Args
         ----
-          inp (numpy.Array):
-            The complex k-space data which is used as input.
+            inp (numpy.Array):
+                The complex k-space data which is used as input.
 
         Returns
         -------
-          numpy.Array: Right hand side of CG normal equation
+            numpy.Array: Right hand side of CG normal equation
         """
         return self.operator.adjoint(inp)
 
@@ -150,22 +152,22 @@ class CGReco:
 
         Args
         ----
-          data (numpy.Array):
-            The complex k-space data to fit.
-          guess (numpy.Array=None):
-            Optional initial guess for the image.
-          maxit (int=10):
-            Maximum number of CG steps.
-          lambd (float=1e-8):
-            Regularization weight for Tikhonov regularizer.
-          tol (float=1e-5):
-            Relative tolerance to terminate optimization.
+            data (numpy.Array):
+                The complex k-space data to fit.
+            guess (numpy.Array=None):
+                Optional initial guess for the image.
+            maxit (int=10):
+                Maximum number of CG steps.
+            lambd (float=1e-8):
+                Regularization weight for Tikhonov regularizer.
+            tol (float=1e-5):
+                Relative tolerance to terminate optimization.
 
         Returns
         -------
-          numpy.Array:
-            final result of optimization,
-            including intermediate results for each CG setp
+            numpy.Array:
+                final result of optimization,
+                including intermediate results for each CG setp
         """
         if self.operator is None:
             print("Please set an Linear operator "
@@ -174,11 +176,22 @@ class CGReco:
 
         if guess is None:
             guess = np.zeros(
-              (maxit+1, 1, 1, self.num_slc, self.dimY, self.dimX),
-              dtype=self.DTYPE)
+              (
+                  maxit+1, 1, 1,
+                  self.num_slc,
+                  self.dimY,
+                  self.dimX
+                  ),
+              dtype=self.DTYPE
+              )
         start = time.time()
         result = self._cg_solve(
-          guess, data[None, :, None, ...], maxit, lambd, tol)
+            guess,
+            data[None, :, None, ...],
+            maxit,
+            lambd,
+            tol
+            )
         result[~np.isfinite(result)] = 0
         end = time.time()-start
         print("-"*80)
@@ -202,28 +215,45 @@ class CGReco:
 
         Args
         ----
-          X (numpy.Array):
-            Initial guess for the image.
-          data (numpy.Array):
-            The complex k-space data to fit.
-          guess (numpy.Array):
-            Optional initial guess for the image.
-          iters (int):
-            Maximum number of CG steps.
-          lambd (float):
-            Regularization weight for Tikhonov regularizer.
-          tol (float):
-            Relative tolerance to terminate optimization.
+            X (numpy.Array):
+                Initial guess for the image.
+            data (numpy.Array):
+                The complex k-space data to fit.
+            guess (numpy.Array):
+                Optional initial guess for the image.
+            iters (int):
+                Maximum number of CG steps.
+            lambd (float):
+                Regularization weight for Tikhonov regularizer.
+            tol (float):
+                Relative tolerance to terminate optimization.
 
         Returns
         -------
-          numpy.Array: A PyOpenCL array containing the result of the
-          computation.
+            numpy.Array:
+                A numpy array containing the result of the
+                computation.
         """
-        b = np.zeros((self.num_scans, 1, self.num_slc, self.dimY, self.dimX),
-                     self.DTYPE)
-        Ax = np.zeros((self.num_scans, 1, self.num_slc, self.dimY, self.dimX),
-                      self.DTYPE)
+        b = np.zeros(
+            (
+                self.num_scans,
+                1,
+                self.num_slc,
+                self.dimY,
+                self.dimX
+                ),
+            self.DTYPE
+            )
+        Ax = np.zeros(
+            (
+                self.num_scans,
+                1,
+                self.num_slc,
+                self.dimY,
+                self.dimX
+                ),
+            self.DTYPE
+            )
 
         b = self.operator_rhs(data)
         res = b
