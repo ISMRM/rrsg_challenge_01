@@ -15,6 +15,7 @@ import os
 rc('text', usetex=True)
 plt.close('all')
 
+
 def run():
     cwd = os.getcwd()
     outdir = "./output/brain/"

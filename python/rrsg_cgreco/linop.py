@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 """ Linear operators for MRI image reconstruction."""
+
 import numpy as np
 from rrsg_cgreco._helper_fun.calckbkernel import calculate_keiser_bessel_kernel
 from abc import ABC, abstractmethod
@@ -12,17 +14,17 @@ class Operator(ABC):
     Abstract base class for linear Operators used in the optimization.
 
     This class serves as the base class for all linear operators used inp
-    the varous optimization algorithms. it requires to implement a forward
-    and backward application inp and out of place.
+    the various optimization algorithms. it requires to implement a forward
+    and backward application in and out of place.
 
     Attributes
     ----------
       num_scans (int):
-        Number of total measurements (Scans)
+        Number of total measurements (scans)
       num_coils (int):
         Number of complex coils
       num_slc (int):
-        Number ofSlices
+        Number of slices
       dimX (int):
         X dimension of the parameter maps
       dimY (int):
@@ -86,7 +88,7 @@ class Operator(ABC):
           Numpy.Array: A PyOpenCL array containing the result of the
           computation.
         """
-        ...
+        raise NotImplementedError
 
     @abstractmethod
     def adjoint(self, inp):
@@ -111,7 +113,7 @@ class Operator(ABC):
           Numpy.Array: A PyOpenCL array containing the result of the
           computation.
         """
-        ...
+        raise NotImplementedError
 
 
 class NUFFT(Operator):
@@ -150,9 +152,7 @@ class NUFFT(Operator):
             par,
             trajectory,
             kwidth=5,
-            fft_dim=(
-                1,
-                2),
+            fft_dim=(1, 2),
             klength=2000,
             DTYPE=np.complex64,
             DTYPE_real=np.float32):
@@ -180,18 +180,18 @@ class NUFFT(Operator):
             The real precission type. Currently float32 is used.
         """
         super().__init__(par, DTYPE, DTYPE_real)
-        self.ogf = par["num_reads"]/par["dimX"]
+        self.ogf = par["num_reads"] / par["dimX"]
 
-        (self.kerneltable, kerneltable_FT, u) = calculate_keiser_bessel_kernel(
+        self.kernel_table, kernel_table_FT, u = calculate_keiser_bessel_kernel(
             kwidth, self.ogf, par["num_reads"], klength)
 
-        deapo = 1 / kerneltable_FT.astype(DTYPE_real)
+        deapo = 1 / kernel_table_FT.astype(DTYPE_real)
         self.deapo = np.outer(deapo, deapo)
 
         self.dens_cor = par["dens_cor"]
         self.traj = trajectory
 
-        self.nkrnlpts = self.kerneltable.size
+        self.n_kernel_points = self.kernel_table.size
         self.gridsize = par["num_reads"]
         self.kwidth = (kwidth / 2)/self.gridsize
 
@@ -291,11 +291,12 @@ class NUFFT(Operator):
                     dk = np.sqrt(dkx ** 2 + dky ** 2)
 
                     if dk < self.kwidth:
-                        fracind = dk / self.kwidth * (self.nkrnlpts - 1)
+                        fracind = dk / self.kwidth * (self.n_kernel_points - 1)
                         kernelind = int(fracind)
                         fracdk = fracind - kernelind
 
-                        kern = self.kerneltable[kernelind] * (1 - fracdk) + self.kerneltable[kernelind + 1] * fracdk
+                        kern = self.kernel_table[kernelind] * (1 - fracdk) + \
+                               self.kernel_table[kernelind + 1] * fracdk
                         indx = gcount1
                         indy = gcount2
 
@@ -315,7 +316,8 @@ class NUFFT(Operator):
                             indy -= self.gridsize
                             indx = self.gridsize - indx
 
-                        sg[iscan, :, :, indy, indx] += kern * kdat[iscan, :, :, iproj, ismpl]
+                        sel_kdat = kdat[iscan, :, :, iproj, ismpl]
+                        sg[iscan, :, :, indy, indx] += kern * sel_kdat
         return sg
 
     def _invgrid_lut(self, sg):
@@ -344,11 +346,12 @@ class NUFFT(Operator):
                     dk = np.sqrt(dkx ** 2 + dky ** 2)
                     if dk < self.kwidth:
 
-                        fracind = dk / self.kwidth * (self.nkrnlpts - 1)
+                        fracind = dk / self.kwidth * (self.n_kernel_points - 1)
                         kernelind = int(fracind)
                         fracdk = fracind - kernelind
 
-                        kern = self.kerneltable[kernelind] * (1 - fracdk) + self.kerneltable[kernelind + 1] * fracdk
+                        kern = self.kernel_table[kernelind] * (1 - fracdk) + \
+                               self.kernel_table[kernelind + 1] * fracdk
                         indx = gcount1
                         indy = gcount2
 
@@ -410,14 +413,15 @@ class MRIImagingModel(Operator):
           trajectory (numpy.array):
             Complex trajectory information for kx/ky points.
           DTYPE (Numpy.Type):
-            The comlex precission type. Currently complex64 is used.
+            The complex precision type. Currently complex64 is used.
           DTYPE_real (Numpy.Type):
-            The real precission type. Currently float32 is used.
+            The real precision type. Currently float32 is used.
         """
         super().__init__(par, DTYPE, DTYPE_real)
 
         self.NUFFT = NUFFT(par, trajectory,
-                           DTYPE=DTYPE, DTYPE_real=DTYPE_real)
+                           DTYPE=DTYPE,
+                           DTYPE_real=DTYPE_real)
         self.coils = par["coils"]
         self.conj_coils = np.conj(par["coils"])
 
@@ -436,7 +440,7 @@ class MRIImagingModel(Operator):
           s (Numpy.Array):
             The non-uniformly gridded k-space
         """
-        return np.sum(self.NUFFT.adjoint(inp)*self.conj_coils, 1)
+        return np.sum(self.NUFFT.adjoint(inp) * self.conj_coils, 1)
 
     def forward(self, inp):
         """

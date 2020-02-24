@@ -139,7 +139,9 @@ def read_data(path, acc, data_rawdata_key='rawdata', data_trajectory_key='trajec
 
     # Normalize trajectory to the range of (-1/2)/(1/2)
     norm_trajectory = 2 * np.max(trajectory[0])
-    trajectory = np.require((trajectory[0] / norm_trajectory + 1j * trajectory[1] / norm_trajectory).T, requirements='C')
+    trajectory = np.require((trajectory[0] / norm_trajectory +
+                             1j * trajectory[1] / norm_trajectory).T,
+                            requirements='C')
     
 
     if len(trajectory.shape) < 3:
