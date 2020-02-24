@@ -256,19 +256,19 @@ class CGReco:
             )
 
         b = self.operator_rhs(data)
-        res = b
-        p = res
-        delta = np.linalg.norm(res)**2/np.linalg.norm(b)**2
+        residual = b
+        p = residual
+        delta = np.linalg.norm(residual) ** 2 / np.linalg.norm(b) ** 2
         self.res.append(delta)
         print("Initial Residuum: ", delta)
 
         for i in range(iters):
             Ax = self.operator_lhs(p)
             Ax = Ax + lambd*p
-            alpha = (np.vdot(res, res)/(np.vdot(p, Ax)))
-            x[i+1] = (x[i] + alpha*p)
-            res_new = res - alpha*Ax
-            delta = np.linalg.norm(res_new)**2/np.linalg.norm(b)**2
+            alpha = np.vdot(residual, residual)/(np.vdot(p, Ax))
+            x[i+1] = x[i] + alpha*p
+            residual_new = residual - alpha*Ax
+            delta = np.linalg.norm(residual_new) ** 2 / np.linalg.norm(b) ** 2
             self.res.append(delta)
             if delta < tol:
                 print("Converged after %i iterations to %1.3e." % (i+1, delta))
@@ -276,8 +276,8 @@ class CGReco:
             if not np.mod(i, 1):
                 print("Residuum at iter %i : %1.3e" % (i+1, delta), end='\r')
 
-            beta = (np.vdot(res_new, res_new) /
-                    np.vdot(res, res))
-            p = res_new+beta*p
-            (res, res_new) = (res_new, res)
+            beta = (np.vdot(residual_new, residual_new) /
+                    np.vdot(residual, residual))
+            p = residual_new + beta * p
+            (residual, residual_new) = (residual_new, residual)
         return x

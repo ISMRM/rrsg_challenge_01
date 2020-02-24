@@ -62,35 +62,35 @@ def calculate_keiser_bessel_kernel(kwidth, overgridfactor, G, klength=32):
         warnings.warn('Warning:  klength must be 2 or more. Default to 2.')
 
     a = overgridfactor
-    w = kwidth
+
     # From Beatty et al. -
     # Rapid Gridding Reconstruction With a Minimal Oversampling Ratio -
     # equation [5]
-    beta = np.pi * np.sqrt((w/a)**2 * (a-0.5) ** 2 - 0.8)
+    beta = np.pi * np.sqrt((kwidth / a) ** 2 * (a - 0.5) ** 2 - 0.8)
 
     # Kernel radii - grid samples.
     u = (
         np.linspace(
             0,
             np.floor(
-                klength * w / 2
+                klength * kwidth / 2
                 ),
             int(
                 np.ceil(
-                    klength * w / 2
+                    klength * kwidth / 2
                     )
                 )
             ) /
         (
             np.floor(
-                klength * w / 2
+                klength * kwidth / 2
                 )
             )
-        * w / 2 / G
+        * kwidth / 2 / G
         )
 
     kern = kaiser_bessel(u, kwidth, beta, G)
-    kern = kern/kern[u == 0]  # Normalize.
+    kern = kern / kern[u == 0]  # Normalize.
 
     ft_y = np.flip(kern)
     ft_y = np.concatenate((ft_y[:-1], kern))
@@ -110,7 +110,30 @@ def calculate_keiser_bessel_kernel(kwidth, overgridfactor, G, klength=32):
     ft_y = ft_y[(ft_y.size / 2 - x).astype(int)]
     h = np.sinc(x / (G * klength)) ** 2
 
-    kern_ft = (ft_y * h)
-    kern_ft = (kern_ft / np.max(kern_ft))
+    kern_ft = ft_y * h
+    kern_ft = kern_ft / np.max(kern_ft)
 
     return kern, kern_ft, u
+
+
+if __name__ == "__main__":
+    # A simple example of what this function does..
+    import matplotlib.pyplot as plt
+    klength = 50
+    kwidth = 1.5
+    for overgridfactor in range(1, 10):
+        for G in range(2, 10):
+            try:
+                a, b, c = calculate_keiser_bessel_kernel(
+                    kwidth=kwidth,
+                    G=G,
+                    overgridfactor=overgridfactor,
+                    klength=klength
+                    )
+                plt.plot(
+                    a,
+                    label='overgridfactor={}, G={}'.format(overgridfactor, G)
+                    )
+            except ValueError:
+                continue
+    #plt.legend()

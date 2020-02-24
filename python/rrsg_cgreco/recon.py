@@ -217,6 +217,7 @@ def read_data(
 
     # Normalize trajectory to the range of (-1/2)/(1/2)
     norm_trajectory = 2 * np.max(trajectory[0])
+
     trajectory = (
       np.require(
         (

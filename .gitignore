@@ -7,7 +7,7 @@ __pycache__/
 
 # C extensions
 *.so
-
+python/rrsg_cgreco/_misc_file.py
 
 # Distribution / packaging
 venv
@@ -107,3 +107,4 @@ venv.bak/
 # mypy
 .mypy_cache/
 
+!/python/rrsg_cgreco/_misc_file.py
