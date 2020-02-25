@@ -73,6 +73,13 @@ def plot_3d_list(image_list, **kwargs):
 
     return f
 
+def plot_complex_arrows(x):
+    fig, ax = plt.subplots()
+    U = X = np.real(x)
+    V = Y = np.imag(x)
+    C = np.angle(x)
+    ax.quiver(X, Y, U, V, C)
+    return Q
 ##
 
 path = 'python/rrsg_cgreco/rawdata_brain_radial_96proj_12ch.h5'
@@ -134,25 +141,79 @@ C = np.angle(trajectory[:N])
 Q = ax.quiver(X, Y, U, V, C)
 
 
-# Density compensation function
-from rrsg_cgreco._helper_fun import goldcomp as goldcomp
-res_dcf = np.sqrt(goldcomp.get_golden_angle_dcf(trajectory))
-plt.imshow(res_dcf)
 
 # Extracted parameters
 [n_ch, n_spokes, num_reads] = rawdata.shape
-ogf = input()
-par["ogf"] = float(eval(ogf))
-dimX, dimY = [int(num_reads/par["ogf"]), int(num_reads/par["ogf"])]
+ogf = 2  # overgridding factor
+dimX, dimY = [int(num_reads/ogf), int(num_reads/ogf)]
 
-par["num_coils"] = n_ch
-par["dimY"] = dimY
-par["dimX"] = dimX
-par["num_reads"] = num_reads
-par["num_proj"] = n_spokes
-par["num_scans"] = 1
-par["num_slc"] = 1
+DTYPE = np.complex64
+DTYPE_real = np.float32
 
-# Example of regridden trajectory
-# Example of fft without regridding
-# Example of fft WITH regridding
+# Density compensation function
+from rrsg_cgreco._helper_fun import goldcomp as goldcomp
+
+# Dense correcrtion
+dcf = (np.sqrt(np.array(goldcomp.get_golden_angle_dcf(trajectory), dtype=DTYPE_real )).astype(DTYPE_real))
+dcf = np.require(np.abs(dcf), DTYPE_real, requirements='C')
+plt.imshow(dcf)
+
+num_coils = n_ch
+dimY = dimY
+dimX = dimX
+num_reads = num_reads
+num_proj = n_spokes
+num_scans = 1
+num_slc = 1
+
+from rrsg_cgreco._helper_fun.est_coils import estimate_coil_sensitivities
+
+par_key = ['num_slc', 'num_scans', 'dimX', 'dimY', 'num_coils', 'N', 'num_proj', 'num_reads']
+par_val = [num_slc, num_scans, dimX, dimY, num_coils, N, num_proj, num_reads]
+par = dict(zip(par_key, par_val))
+
+estimate_coil_sensitivities(data=rawdata, trajectory=trajectory, par=par)
+
+plot_3d_list(par['coils'][:,0], augm='np.abs')
+plot_3d_list(par['phase_map'], augm='np.angle')
+plot_complex_arrows(par['phase_map'][0])
+
+# So now we have some coil sensitivities... awesome.
+# How will this be used..?
+# How will the dcf be used..?
+
+# Next step is to create an operator to solve our problems...
+# This object MRI... stores three new objects
+# - NUFFT operator (forward/adjoint)
+        # This guy on its turn gets
+            # Keiser Bessel Kernel
+            # Deapodization stuff
+            # Implementas forward/adjoint operators
+                # The forward/adjoint steps contain apodization and regridding. Show how this works.
+
+#   coil sensitivities
+#   conjugate of these coil sensitivities
+
+# But it also implements adjoint.forward operators..
+    # This is based on the forward/adjoint operators of the NUFFT object.
+
+
+# Besides the operator, we also need a way to solve our equaition Ax=b.
+# This is done by defining an CG recon object
+# This is just a simple and generic CG approach
+
+# Tada and done..
+# Result..?
+# Result without regreidding/adopization?
+
+
+
+
+# TODO replace len(x.shape) < y requirements to x.dim < y
+# TODO make a print dict function to make clear what is in this par dictionary
+# TODO dens coil correction function is being executed twice..
+# When setting up parameters. and when estimating coil sensitivities
+# Can this be helped? i.e. if.. key is there.. then.. else..
+# TODO make clear what is added in estimate_coils...
+# TODO for me.. figuring out the dimensions and what everything means is quite time consuming..
+# TODO dens_cor in par-dict is not consistent with what it does. It should be densitiy compensation function, not correction.

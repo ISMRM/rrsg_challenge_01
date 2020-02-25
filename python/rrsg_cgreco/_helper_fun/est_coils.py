@@ -61,7 +61,7 @@ def estimate_coil_sensitivities(data, trajectory, par):
                   setup the object. Needs to contain the number of slices
                   (num_slc), number of scans (num_scans),
                   image dimensions (dimX, dimY), number of coils (num_coils),
-                  sampling pos (N) and read outs (NProj).
+                  sampling pos (num_reads) and read outs (num_proj).
     """
     nlinv_newton_steps = 6
     nlinv_real_constr = False
