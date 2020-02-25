@@ -193,8 +193,7 @@ class NUFFT(Operator):
             kwidth,
             self.overgridfactor,
             par["num_reads"],
-            klength
-            )
+            klength)
 
         deapo = 1 / kerneltable_FT.astype(DTYPE_real)
         self.deapo = np.outer(deapo, deapo)
@@ -302,7 +301,7 @@ class NUFFT(Operator):
             dtype=self.DTYPE
             )
 
-        kdat = s*self.dens_cor
+        kdat = s * self.dens_cor  # TODO I see dense correction here, but also at 355 recon.py
         for iscan, iproj, ismpl in itertools.product(
                 range(self.num_scans),
                 range(self.num_proj),
@@ -442,9 +441,9 @@ class MRIImagingModel(Operator):
     Attributes
     ----------
         coils (Numpy.Array):
-            The comlex coil sensitivity profiles
+            The complex coil sensitivity profiles
         conj_coils (Numpy.Array):
-            The precomputed comlex conjugate coil sensitivity profiles
+            The precomputed complex conjugate coil sensitivity profiles
         NUFFT (linop.NUFFT):
             The NUFFT object to perform gridding.
     """
@@ -466,9 +465,8 @@ class MRIImagingModel(Operator):
                 setup the object. Needs to contain the number of slices
                 (num_slc),
                 number of scans (num_scans), image dimensions (dimX, dimY),
-                number of coils (num_coils), sampling pos (N)
-                and read outs (num_proj) and the complex
-                coil sensitivities (C).
+                number of coils (num_coils), sampling pos (num_reads)
+                and read outs (num_proj) and the complex coil sensitivities (coils).
             trajectory (numpy.array):
                 Complex trajectory information for kx/ky points.
             DTYPE (Numpy.Type):

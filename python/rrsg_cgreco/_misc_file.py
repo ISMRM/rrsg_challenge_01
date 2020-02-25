@@ -168,10 +168,11 @@ num_slc = 1
 
 from rrsg_cgreco._helper_fun.est_coils import estimate_coil_sensitivities
 
-par_key = ['num_slc', 'num_scans', 'dimX', 'dimY', 'num_coils', 'N', 'num_proj', 'num_reads']
-par_val = [num_slc, num_scans, dimX, dimY, num_coils, N, num_proj, num_reads]
+par_key = ['num_slc', 'num_scans', 'dimX', 'dimY', 'num_coils', 'N', 'num_proj', 'num_reads', 'dens_cor']
+par_val = [num_slc, num_scans, dimX, dimY, num_coils, N, num_proj, num_reads, dcf]
 par = dict(zip(par_key, par_val))
 
+# This gives us 'coils' and 'phase_map'
 estimate_coil_sensitivities(data=rawdata, trajectory=trajectory, par=par)
 
 plot_3d_list(par['coils'][:,0], augm='np.abs')
@@ -179,8 +180,64 @@ plot_3d_list(par['phase_map'], augm='np.angle')
 plot_complex_arrows(par['phase_map'][0])
 
 # So now we have some coil sensitivities... awesome.
-# How will this be used..?
-# How will the dcf be used..?
+# How will this be used..? --> Used in the forward operator and adjoint operator (conj) in the operator.
+# How will the dcf be used..? --> Used in the gridding process of the NUFFT operator.
+
+# Create some operator
+import rrsg_cgreco.linop as linop
+import rrsg_cgreco.solver as solver
+MRImagingOperator = linop.MRIImagingModel(par, trajectory)
+# This creates a NUFFT object
+NUFFT = linop.NUFFT(par, trajectory, DTYPE=DTYPE, DTYPE_real=DTYPE_real)
+
+# Based on kwidth, ogf, num reads, klength
+plt.plot(NUFFT.kerneltable)
+plt.title('kernel table')
+
+# Based on kerneltable FT
+plt.imshow(NUFFT.deapo)
+plt.title('deapodiztion')
+
+# Adjoint NUFFT operation
+# Grid k-space
+ogkspace = NUFFT._grid_lut(trajectory[np.newaxis])
+
+# FFT
+ogkspace = np.fft.ifftshift(ogkspace, axes=NUFFT.fft_dim)
+ogkspace = np.fft.ifft2(ogkspace, norm='ortho')
+ogkspace = np.fft.ifftshift(ogkspace, axes=NUFFT.fft_dim)
+result_adjoint = NUFFT._deapo_adj(ogkspace)
+
+## Adjoint of operator MRI
+np.sum(MRImagingOperator.NUFFT.adjoint(inp) * MRImagingOperator.conj_coils, 1)
+
+# forward NUFFT operation
+ogkspace = NUFFT._deapo_fwd(inp)
+# FFT
+ogkspace = np.fft.fftshift(ogkspace, axes=(-2, -1))
+ogkspace = np.fft.fft2(ogkspace, norm='ortho')
+ogkspace = np.fft.fftshift(ogkspace, axes=(-2, -1))
+# Resample on Spoke
+NUFFT._invgrid_lut(ogkspace)
+## Forward operator of MRI
+MRImagingOperator.NUFFT.forward(inp * MRImagingOperator.coils)
+
+
+# When are forward and adjoint being used..?
+
+# Well lets find out in the optimizqation thingy!
+
+cgs = solver.CGReco(par)
+cgs.set_operator(MRImagingOperator)
+
+# Start reconstruction
+plt.imshow(np.real(rawdata * par["dens_cor"])[0])
+ogkspace = NUFFT._grid_lut(rawdata[None, :, None])
+recon_result = cgs.optimize((rawdata * par["dens_cor"]))
+
+b = MRImagingOperator.adjoint(inp)
+Ax = MRImagingOperator.adjoint(MRImagingOperator.forward(b[None, ...]))
+
 
 # Next step is to create an operator to solve our problems...
 # This object MRI... stores three new objects
@@ -206,14 +263,7 @@ plot_complex_arrows(par['phase_map'][0])
 # Result..?
 # Result without regreidding/adopization?
 
-
-
-
-# TODO replace len(x.shape) < y requirements to x.dim < y
 # TODO make a print dict function to make clear what is in this par dictionary
-# TODO dens coil correction function is being executed twice..
-# When setting up parameters. and when estimating coil sensitivities
-# Can this be helped? i.e. if.. key is there.. then.. else..
-# TODO make clear what is added in estimate_coils...
-# TODO for me.. figuring out the dimensions and what everything means is quite time consuming..
-# TODO dens_cor in par-dict is not consistent with what it does. It should be densitiy compensation function, not correction.
+# TODO make clear what dimensions are used where. Somewhere (for rawdata) at certain locations new axes are added. It is not clear directly why this is.
+
+

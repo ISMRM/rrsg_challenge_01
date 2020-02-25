@@ -352,7 +352,7 @@ def _run_reco(args):
     cgs = solver.CGReco(par)
     cgs.set_operator(MRImagingOperator)
     # Start reconstruction
-    recon_result = cgs.optimize(rawdata * par["dens_cor"])
+    recon_result = cgs.optimize(rawdata * par["dens_cor"])  # TODO I see dense correction here, but also at 304 linop.py
     # Store results
     save_to_file(recon_result, args)
 

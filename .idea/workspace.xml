@@ -3,9 +3,10 @@
   <component name="ChangeListManager">
     <list default="true" id="ac54a33a-4b6a-46e3-8fa9-a807c1a0c46d" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/_helper_fun/est_coils.py" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/_helper_fun/est_coils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/_misc_file.py" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/_misc_file.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/linop.py" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/linop.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/recon.py" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/recon.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/solver.py" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/solver.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -95,7 +96,7 @@
       <workItem from="1582555853213" duration="1031000" />
       <workItem from="1582609909934" duration="726000" />
       <workItem from="1582612928656" duration="891000" />
-      <workItem from="1582625254573" duration="2872000" />
+      <workItem from="1582625254573" duration="7899000" />
     </task>
     <servers />
   </component>
@@ -142,10 +143,10 @@
     </state>
     <state x="431" y="342" key="com.intellij.ide.util.TipDialog/0.25.1680.1000/1680.0.1920.1080@0.25.1680.1000" timestamp="1582613213210" />
     <state x="493" y="352" key="com.intellij.ide.util.TipDialog/0.25.1920.1030@0.25.1920.1030" timestamp="1582555864403" />
-    <state x="532" y="247" width="745" height="578" key="find.popup" timestamp="1582631735171">
+    <state x="532" y="247" width="745" height="578" key="find.popup" timestamp="1582637060232">
       <screen x="0" y="25" width="1680" height="1000" />
     </state>
-    <state x="532" y="247" width="745" height="578" key="find.popup/0.25.1680.1000/1680.0.1920.1080@0.25.1680.1000" timestamp="1582631735171" />
+    <state x="532" y="247" width="745" height="578" key="find.popup/0.25.1680.1000/1680.0.1920.1080@0.25.1680.1000" timestamp="1582637060232" />
     <state x="608" y="254" width="809" height="578" key="find.popup/0.25.1920.1030@0.25.1920.1030" timestamp="1582556680911" />
     <state x="500" y="244" width="672" height="678" key="search.everywhere.popup" timestamp="1582550291202">
       <screen x="0" y="25" width="1680" height="1000" />

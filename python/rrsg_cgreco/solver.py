@@ -115,6 +115,8 @@ class CGReco:
         -------
             numpy.Array: Left hand side of CG normal equation
         """
+        assert self.operator is not None, "Please set an operator with the set_operation method"
+
         return self.operator_rhs(self.operator.forward(inp[None, ...]))
 
     def operator_rhs(self, inp):
@@ -133,6 +135,8 @@ class CGReco:
         -------
             numpy.Array: Right hand side of CG normal equation
         """
+        assert self.operator is not None, "Please set an operator with the set_operation method"
+
         return self.operator.adjoint(inp)
 
 ###############################################################################
@@ -264,10 +268,10 @@ class CGReco:
 
         for i in range(iters):
             Ax = self.operator_lhs(p)
-            Ax = Ax + lambd*p
+            Ax = Ax + lambd * p
             alpha = np.vdot(residual, residual)/(np.vdot(p, Ax))
-            x[i+1] = x[i] + alpha*p
-            residual_new = residual - alpha*Ax
+            x[i + 1] = x[i] + alpha * p
+            residual_new = residual - alpha * Ax
             delta = np.linalg.norm(residual_new) ** 2 / np.linalg.norm(b) ** 2
             self.res.append(delta)
             if delta < tol:
