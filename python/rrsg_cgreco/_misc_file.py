@@ -73,6 +73,7 @@ def plot_3d_list(image_list, **kwargs):
 
     return f
 
+
 def plot_complex_arrows(x):
     fig, ax = plt.subplots()
     U = X = np.real(x)
@@ -80,7 +81,7 @@ def plot_complex_arrows(x):
     C = np.angle(x)
     ax.quiver(X, Y, U, V, C)
     return Q
-##
+
 
 path = 'python/rrsg_cgreco/rawdata_brain_radial_96proj_12ch.h5'
 acc = 1
@@ -140,33 +141,26 @@ V = np.imag(trajectory[:N])
 C = np.angle(trajectory[:N])
 Q = ax.quiver(X, Y, U, V, C)
 
+from rrsg_cgreco._helper_fun import goldcomp as goldcomp
+from rrsg_cgreco._helper_fun.est_coils import estimate_coil_sensitivities
+import rrsg_cgreco.linop as linop
+import rrsg_cgreco.solver as solver
 
-
-# Extracted parameters
-[n_ch, n_spokes, num_reads] = rawdata.shape
-ogf = 2  # overgridding factor
-dimX, dimY = [int(num_reads/ogf), int(num_reads/ogf)]
+"""Extract parameters from data"""
+num_coils, num_proj, num_reads = rawdata.shape
+# Define parameters...
+ogf = 2  # over-gridding factor
+num_scans = 1
+num_slc = 1
+dimX, dimY = (int(num_reads/ogf), int(num_reads/ogf))
 
 DTYPE = np.complex64
 DTYPE_real = np.float32
 
 # Density compensation function
-from rrsg_cgreco._helper_fun import goldcomp as goldcomp
-
-# Dense correcrtion
 dcf = (np.sqrt(np.array(goldcomp.get_golden_angle_dcf(trajectory), dtype=DTYPE_real )).astype(DTYPE_real))
 dcf = np.require(np.abs(dcf), DTYPE_real, requirements='C')
 plt.imshow(dcf)
-
-num_coils = n_ch
-dimY = dimY
-dimX = dimX
-num_reads = num_reads
-num_proj = n_spokes
-num_scans = 1
-num_slc = 1
-
-from rrsg_cgreco._helper_fun.est_coils import estimate_coil_sensitivities
 
 par_key = ['num_slc', 'num_scans', 'dimX', 'dimY', 'num_coils', 'N', 'num_proj', 'num_reads', 'dens_cor']
 par_val = [num_slc, num_scans, dimX, dimY, num_coils, N, num_proj, num_reads, dcf]
@@ -184,16 +178,17 @@ plot_complex_arrows(par['phase_map'][0])
 # How will the dcf be used..? --> Used in the gridding process of the NUFFT operator.
 
 # Create some operator
-import rrsg_cgreco.linop as linop
-import rrsg_cgreco.solver as solver
 MRImagingOperator = linop.MRIImagingModel(par, trajectory)
+
 # This creates a NUFFT object
 NUFFT = linop.NUFFT(par, trajectory, DTYPE=DTYPE, DTYPE_real=DTYPE_real)
 
+# In this NUFFT object we need a regridding kernel. This is based on the KB kernel...
 # Based on kwidth, ogf, num reads, klength
 plt.plot(NUFFT.kerneltable)
 plt.title('kernel table')
 
+# To correct for certain transformation, we want to adopize the data as welll
 # Based on kerneltable FT
 plt.imshow(NUFFT.deapo)
 plt.title('deapodiztion')
@@ -265,5 +260,3 @@ Ax = MRImagingOperator.adjoint(MRImagingOperator.forward(b[None, ...]))
 
 # TODO make a print dict function to make clear what is in this par dictionary
 # TODO make clear what dimensions are used where. Somewhere (for rawdata) at certain locations new axes are added. It is not clear directly why this is.
-
-

@@ -24,7 +24,7 @@ class Operator(ABC):
         num_coils (int):
             Number of complex coils
         num_slc (int):
-            Number ofSlices
+            Number of slices
         dimX (int):
             X dimension of the parameter maps
         dimY (int):
@@ -125,30 +125,30 @@ class NUFFT(Operator):
     Non-uniform FFT object.
 
     This class performs the non-uniform FFT (NUFFT) operation. Linear
-    erpolation of a sampled gridding kernel is used to regrid pos
+    interpolation of a sampled gridding kernel is used to re-grid pos
     from the non-cartesian grid back on the cartesian grid.
 
     Attributes
     ----------
-        traj (Numpy.Array):
-            The comlex sampling trajectory
-        dens_cor (Numpy.Array):
-            The densitiy compenation function
+        trajectory (Numpy.Array):
+            The complex sampling trajectory
+        dens_comp (Numpy.Array):
+            The density compensation function
         overgridfactor (float):
-            The overgriddingfactor for non-cartesian k-spaces.
+            The over-gridding factor for non-cartesian k-spaces.
         fft_scale (float32):
-            The scaling factor to achieve a good adjoness of the forward and
+            The scaling factor to achieve a good adjointness of the forward and
             backward FFT.
         kerneltable (Numpy.Array):
             The gridding lookup table
         deapo (Numpy.Array):
-            The deapodization lookup table
-        nkrnlpts (int):
+            The de-apodization lookup table
+        n_kernel_points (int):
             The number of points in the precomputed gridding kernel
         grid_size (int):
             The size of the grid to interpolate to
         kwidth (float):
-            The half width of the kernel relative to the number of gridpoints
+            The half width of the kernel relative to the number of grid-points
     """
 
     def __init__(
@@ -169,22 +169,24 @@ class NUFFT(Operator):
             par (dict):
                 A python dict containing the necessary information to
                 setup the object. Needs to contain the number of slices
-                (num_slc),
-                number of scans (num_scans), image dimensions (dimX, dimY),
-                number of coils (num_coils), sampling pos (N) and
-                read outs (num_proj).
+                (num_slc), number of scans (num_scans),
+                image dimensions (dimX, dimY), number of coils (num_coils),
+                sampling pos (N) and read outs (num_proj).
             trajectory (numpy.array):
                 Complex trajectory information for kx/ky points.
+                Expects a shape of (num_scans, num_proj, num_reads)
             kwidth (int):
-                The width of the sampling kernel for regridding of non-uniform
+                The width of the sampling kernel for re-gridding of non-uniform
                 kspace samples.
+            fft_dim (tuple):
+                A tuple containing the axes over which the Fourier Transform is performed.
             klength (int):
                 The length of the kernel lookup table which samples the
-                contineous gridding kernel.
+                continuous gridding kernel.
             DTYPE (Numpy.Type):
-                The comlex precission type. Currently complex64 is used.
+                The complex precision type. Currently complex64 is used.
             DTYPE_real (Numpy.Type):
-                The real precission type. Currently float32 is used.
+                The real precision type. Currently float32 is used.
         """
         super().__init__(par, DTYPE, DTYPE_real)
         self.overgridfactor = par["num_reads"] / par["dimX"]
@@ -198,8 +200,8 @@ class NUFFT(Operator):
         deapo = 1 / kerneltable_FT.astype(DTYPE_real)
         self.deapo = np.outer(deapo, deapo)
 
-        self.dens_cor = par["dens_cor"]
-        self.traj = trajectory
+        self.dens_comp = par["dens_cor"]
+        self.trajectory = trajectory
 
         self.n_kernel_points = self.kerneltable.size
         self.grid_size = par["num_reads"]
@@ -301,15 +303,15 @@ class NUFFT(Operator):
             dtype=self.DTYPE
             )
 
-        kdat = s * self.dens_cor  # TODO I see dense correction here, but also at 355 recon.py
-        for iscan, iproj, ismpl in itertools.product(
+        kdat = s * self.dens_comp  # TODO I see dense correction here, but also at 355 recon.py
+        for iscan, iproj, iread in itertools.product(
                 range(self.num_scans),
                 range(self.num_proj),
                 range(self.num_reads)
                 ):
 
-            kx = self.traj[iscan, iproj, ismpl].imag
-            ky = self.traj[iscan, iproj, ismpl].real
+            kx = self.trajectory[iscan, iproj, iread].imag
+            ky = self.trajectory[iscan, iproj, iread].real
 
             ixmin = int((kx - self.kwidth) * self.grid_size + gridcenter)
             ixmax = int((kx + self.kwidth) * self.grid_size + gridcenter) + 1
@@ -358,7 +360,7 @@ class NUFFT(Operator):
                                 :,
                                 :,
                                 iproj,
-                                ismpl
+                                iread
                                 ]
                             )
         return sg
@@ -383,8 +385,8 @@ class NUFFT(Operator):
                 range(self.num_reads)
                 ):
 
-            kx = self.traj[iscan, iproj, ismpl].imag
-            ky = self.traj[iscan, iproj, ismpl].real
+            kx = self.trajectory[iscan, iproj, ismpl].imag
+            ky = self.trajectory[iscan, iproj, ismpl].real
 
             ixmin = int((kx - self.kwidth) * self.grid_size + gridcenter)
             ixmax = int((kx + self.kwidth) * self.grid_size + gridcenter) + 1
@@ -428,7 +430,7 @@ class NUFFT(Operator):
 
                         s[iscan, :, :, iproj, ismpl] += \
                             kern*sg[iscan, :, :, indy, indx]
-        return s*self.dens_cor
+        return s * self.dens_comp
 
 
 class MRIImagingModel(Operator):
