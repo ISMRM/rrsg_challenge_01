@@ -26,7 +26,7 @@ import numpy as np
 from rrsg_cgreco._helper_fun.kb import kaiser_bessel
 
 
-def calculate_keiser_bessel_kernel(kwidth, overgridfactor, G, klength=32):
+def calculate_keiser_bessel_kernel(kwidth, overgridfactor, G, klength=32, **kwargs):
     """
     Calculate the appropriate Kaiser-Bessel gridding kernel.
 

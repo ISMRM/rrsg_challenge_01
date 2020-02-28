@@ -6,9 +6,15 @@ import os
 import h5py
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import rrsg_cgreco.recon
+from rrsg_cgreco._helper_fun import goldcomp as goldcomp
+from rrsg_cgreco._helper_fun.est_coils import estimate_coil_sensitivities
+from rrsg_cgreco._helper_fun.calckbkernel import calculate_keiser_bessel_kernel
+import rrsg_cgreco.linop as linop
+import rrsg_cgreco.solver as solver
 
 
-## My own functions
+""" Own funcitons"""
 
 def plot_3d_list(image_list, **kwargs):
     # Input of either a 2d list of np.arrays.. or a 3d list of np.arrays..
@@ -83,41 +89,18 @@ def plot_complex_arrows(x):
     return Q
 
 
+""" Read in the data """
+
 path = 'python/rrsg_cgreco/rawdata_brain_radial_96proj_12ch.h5'
-acc = 1
+acceleration = 1
 
-if not os.path.isfile(path):
-    raise ValueError("Data file does not exist")
+# This gives us normalized trajectory over range -0.5 .. 0.5
+rawdata, trajectory = rrsg_cgreco.recon.read_data(path=path, acc=acceleration)
 
-name = os.path.normpath(path)
-with h5py.File(name, 'r') as h5_dataset:
-    h5_dataset_rawdata_name = 'rawdata'
-    h5_dataset_trajectory_name = 'trajectory'
 
-    if "heart" in name:
-        if acc == 2:
-            trajectory = h5_dataset.get(h5_dataset_trajectory_name)[:, :, :33]
-            rawdata = h5_dataset.get(h5_dataset_rawdata_name)[:, :, :33, :]
-        elif acc == 3:
-            trajectory = h5_dataset.get(h5_dataset_trajectory_name)[:, :, :22]
-            rawdata = h5_dataset.get(h5_dataset_rawdata_name)[:, :, :22, :]
-        elif acc == 4:
-            trajectory = h5_dataset.get(h5_dataset_trajectory_name)[:, :, :11]
-            rawdata = h5_dataset.get(h5_dataset_rawdata_name)[:, :, :11, :]
-        else:
-            trajectory = h5_dataset.get(h5_dataset_trajectory_name)[...]
-            rawdata = h5_dataset.get(h5_dataset_rawdata_name)[...]
-    else:
-        trajectory = h5_dataset.get(h5_dataset_trajectory_name)[:, :, ::acc]
-        rawdata = h5_dataset.get(h5_dataset_rawdata_name)[:, :, ::acc, :]
+""" Display trajectory """
 
-# Squeeze dummy dimension and transpose to C-style ordering.
-rawdata = np.squeeze(rawdata.T)
-
-# Norm Trajectory to the range of (-1/2)/(1/2)
-max_trajectory = 2 * np.max(trajectory[0])
-trajectory = np.require((trajectory[0] / max_trajectory + 1j * trajectory[1] / max_trajectory).T, requirements='C')
-
+trajectory = np.squeeze(trajectory)
 # Example of a couple of spokes
 plt.plot(np.real(trajectory).T, 'b', alpha=0.5)
 plt.plot(np.imag(trajectory).T, 'r', alpha=0.5)
@@ -130,265 +113,129 @@ ax[1].imshow(np.imag(trajectory))
 ax[1].set_title('imaginary part')
 
 # Quiver plot of the trajectory. This is insightful
-fig, ax = plt.subplots()
-ax.set_xlim(-.5, .5)
-ax.set_ylim(-.5, .5)
+fig_quiver, ax_quiver = plt.subplots()
+ax_quiver.set_xlim(-.5, .5)
+ax_quiver.set_ylim(-.5, .5)
 N = None
-X = np.real(trajectory[:N])
-Y = np.imag(trajectory[:N])
-U = np.real(trajectory[:N])
-V = np.imag(trajectory[:N])
+U = X = np.real(trajectory[:N])
+V = Y = np.imag(trajectory[:N])
 C = np.angle(trajectory[:N])
-Q = ax.quiver(X, Y, U, V, C)
+Q = ax_quiver.quiver(X, Y, U, V, C)
 
-from rrsg_cgreco._helper_fun import goldcomp as goldcomp
-from rrsg_cgreco._helper_fun.est_coils import estimate_coil_sensitivities
-import rrsg_cgreco.linop as linop
-import rrsg_cgreco.solver as solver
 
-"""Extract parameters from data"""
+""" Display raw data """
+
+plot_3d_list(rawdata, augm='np.abs')
+
+
+""" NUFFT step by step guide """
+
+""" We are going to solve an inverse problem b = Ax
+    We need several objects for that
+    
+    - density compensation function
+    - Coil sensitivities, derived from measurement..
+    - adopization function
+    - regridding procedure
+    - adjoint/forward operator creation
+    - optimization/solver algorithm  """
+
+
+""" We start with defining parameters for this process"""
+
 num_coils, num_proj, num_reads = rawdata.shape
-# Define parameters...
-ogf = 2  # over-gridding factor
+overgridfactor = 2  # over-gridding factor
 num_scans = 1
 num_slc = 1
-dimX, dimY = (int(num_reads/ogf), int(num_reads/ogf))
+dimX, dimY = (int(num_reads/overgridfactor),
+              int(num_reads/overgridfactor))  # Hoe en waar worden dimX en dimY gebruikt?
 
 DTYPE = np.complex64
 DTYPE_real = np.float32
 
-# Density compensation function
+# Put these data points in a dictionary
+par_key = ['num_slc', 'num_scans', 'dimX', 'dimY', 'num_coils', 'num_proj', 'num_reads', 'overgridfactor']
+par_val = [num_slc, num_scans, dimX, dimY, num_coils, num_proj, num_reads, overgridfactor]
+par = dict(zip(par_key, par_val))
+
+""" Get the density compensation function based on the trajectory data """
+
 density_comp = (np.sqrt(np.array(goldcomp.get_golden_angle_dcf(trajectory), dtype=DTYPE_real)).astype(DTYPE_real))
 density_comp = np.require(np.abs(density_comp), DTYPE_real, requirements='C')
 plt.imshow(density_comp)
 
-par_key = ['num_slc', 'num_scans', 'dimX', 'dimY', 'num_coils', 'N', 'num_proj', 'num_reads', 'dens_cor']
-par_val = [num_slc, num_scans, dimX, dimY, num_coils, N, num_proj, num_reads, density_comp]
-par = dict(zip(par_key, par_val))
+par['dens_cor'] = density_comp
 
-# This gives us 'coils' and 'phase_map'
-estimate_coil_sensitivities(data=rawdata, trajectory=trajectory, par=par)
+""" Get Bessel Kernel for interpolation """
 
-plot_3d_list(par['coils'][:,0], augm='np.abs')
-plot_3d_list(par['phase_map'], augm='np.angle')
-plot_complex_arrows(par['phase_map'][0])
+par['kwidth'] = 5
+par['klength'] = 500
+kerneltable, kerneltable_FT, u = calculate_keiser_bessel_kernel(G=256, **par)
+plt.plot(u, kerneltable)
 
-# So now we have some coil sensitivities... awesome.
-# How will this be used..? --> Used in the forward operator and adjoint operator (conj) in the operator.
-# How will the dcf be used..? --> Used in the gridding process of the NUFFT operator.
 
-# Create some operator
-MRImagingOperator = linop.MRIImagingModel(par, trajectory)
+""" Get adopization """
+
+deapodization = 1 / kerneltable_FT.astype(DTYPE_real)
+deapodization = np.outer(deapodization, deapodization)
+plt.imshow(deapodization)
+
+
+""" However, we can also combine all this information into one module! """
 
 # This creates a NUFFT object
-NUFFT = linop.NUFFT(par, trajectory, DTYPE=DTYPE, DTYPE_real=DTYPE_real)
+import importlib
+importlib.reload(linop)
+NUFFT = linop.NUFFT(par, trajectory[np.newaxis], DTYPE=DTYPE, DTYPE_real=DTYPE_real)
 
-# In this NUFFT object we need a regridding kernel. This is based on the KB kernel...
-# Based on kwidth, ogf, num reads, klength
-plt.plot(NUFFT.kerneltable)
-plt.title('kernel table')
+ogkspace, grid_point_mapping = NUFFT._grid_lut(rawdata[None, :, None], return_mapping=True)
 
-# To correct for certain transformation, we want to adopize the data as welll
-# Based on kerneltable FT
-plt.imshow(NUFFT.deapodization)
-plt.title('deapodiztion')
+""" What did this gridding exactly do? Well it created a mapping! """
 
-## Adjoint of operator MRI
-np.sum(MRImagingOperator.NUFFT.adjoint(inp) * MRImagingOperator.conj_coils, 1)
+# This can take some time.. depending on n_step
+n_step = 30
+for jj in range(0, 92, n_step):
+    for i_point in range(jj * 512, (jj+1)*512, 32):
+        for i, temp_point in enumerate(grid_point_mapping[i_point]):
+            if i == 0:
+                # Original point
+                plt.scatter(temp_point[0], temp_point[1], c='r')
+            else:
+                # Mapped point
+                plt.scatter(temp_point[0], temp_point[1], c='k')
 
+""" And what is the result of the gridding to the original data...? """
 
-# Adjoint NUFFT operation
-# Grid k-space
-ogkspace = NUFFT._grid_lut(trajectory[np.newaxis])
+plot_3d_list(rawdata, augm='np.real', vmin=(0, 0.000001))
+plot_3d_list(ogkspace[0, :, 0], augm='np.real', vmin=(0, 0.000001))
 
+""" Now let us add a Fourier Transform to it"""
+res = NUFFT.adjoint(rawdata[None, :, None])  # Somehwere it should be made clear how these dimensions are defined.
+plot_3d_list(res[0, :, 0], augm='np.angle')
+plot_3d_list(res[0, :, 0], augm='np.abs')
 
-# # # # But how does THIS work?
-s = rawdata[None, :, None]
-trajectory = trajectory[np.newaxis]
-grid_size = num_reads
-overgridfactor = ogf
-klength = 2000
-kwidth = 5
-gridcenter = grid_size / 2
-from rrsg_cgreco._helper_fun.calckbkernel import calculate_keiser_bessel_kernel
-kerneltable, kerneltable_FT, u = calculate_keiser_bessel_kernel(kwidth, overgridfactor, num_reads, klength)
-n_kernel_points = kerneltable.size
-plt.plot(u, kerneltable)  # Zoiets...?
+# Could show with and without apodization
+# Amazing! We moved stuff to a cartesian grid and got ourselves an image!
 
-sg = np.zeros(
-    (
-        num_scans,
-        num_coils,
-        num_slc,
-        grid_size,
-        grid_size
-    ),
-    dtype=DTYPE
-)
-import itertools
-kdat = s * density_comp  # TODO I see dense correction here, but also at 355 recon.py
-# Difference with non density compensated data
-plot_3d_list(kdat[0,:,0], augm='np.abs')
-plot_3d_list(s[0,:,0], augm='np.abs')
+""" Move on to MRI Imaging Model """
 
-for iscan, iproj, iread in itertools.product(
-        range(num_scans),
-        range(num_proj),
-        range(num_reads)):
+""" Compute the coil sensitivities """
+# This adds the 'coils' and 'phase_map' keys to the par dict.
+estimate_coil_sensitivities(data=rawdata, trajectory=trajectory, par=par)
 
-    kx = trajectory[iscan, iproj, iread].imag
-    ky = trajectory[iscan, iproj, iread].real
-    # The trajectory and the point we are looking at...
-    fig, ax = plt.subplots()
-    ax.scatter(kx, ky, 100, c='k', marker='*')
-    ax.plot(trajectory[0].real, trajectory[0].imag, 'r', alpha=0.25)
+# I dont understand yet why this is 250 x 250 now..
+plot_3d_list(par['coils'][:, 0], augm='np.abs')
+plot_3d_list(par['phase_map'], augm='np.angle')
 
-    ixmin = int((kx - kwidth) * grid_size + gridcenter)
-    ixmax = int((kx + kwidth) * grid_size + gridcenter) + 1
-    iymin = int((ky - kwidth) * grid_size + gridcenter)
-    iymax = int((ky + kwidth) * grid_size + gridcenter) + 1
+""" The adjoint operator depends on the implementation of NUFFT... """
 
-    plt.vlines(x=ixmin, ymin=iymin, ymax=iymax)
-    plt.vlines(x=ixmax, ymin=iymin, ymax=iymax)
-    plt.hlines(y=iymin, xmin=ixmin, xmax=ixmax)
-    plt.hlines(y=iymax, xmin=ixmin, xmax=ixmax)
+MRImagingOperator = linop.MRIImagingModel(par, trajectory)
 
-    # TODO Why wont we loop from range(-kwidth, kwdith, 1/grid_size) instead..?
-    # a = np.arange(-kwidth, kwidth, 1 / grid_size)
-    # len(a) == ixmax-ixmin
-    for gcount1 in np.arange(ixmin, ixmax + 1, 100):
-        dkx = (gcount1 - gridcenter) / grid_size - kx
+# Adjoint of operator MRI
+#
+res = np.sum(MRImagingOperator.NUFFT.adjoint(rawdata[None, :, None]) * MRImagingOperator.conj_coils, 1)
 
-        for gcount2 in np.arange(iymin, iymax + 1, 100):
-            dky = (gcount2 - gridcenter) / grid_size - ky
-            dk = np.sqrt(dkx ** 2 + dky ** 2)
-
-            if dk < kwidth:
-                # Here we correct for the distance between the kernel points...
-                fracind = dk / kwidth * (n_kernel_points - 1)
-                kernelind = int(fracind)
-                fracdk = fracind - kernelind
-
-                kern = (
-                        kerneltable[kernelind] * (1 - fracdk) +
-                        kerneltable[kernelind + 1] * fracdk
-                )
-                plt.scatter(gcount1, gcount2, 50, c='k')
-                indx = gcount1
-                indy = gcount2
-
-                if gcount1 < 0:
-                    indx += grid_size
-                    indy = grid_size - indy
-
-                if gcount1 >= grid_size:
-                    indx -= grid_size
-                    indy = grid_size - indy
-
-                if gcount2 < 0:
-                    indy += grid_size
-                    indx = grid_size - indx
-
-                if gcount2 >= grid_size:
-                    indy -= grid_size
-                    indx = grid_size - indx
-
-                plt.scatter(indx, indy, 50, c='r')
-                plt.plot([gcount1, indx], [gcount2, indy], 'b', alpha=0.01)
-                sg[iscan, :, :, indy, indx] += (
-                        kern * kdat[
-                               iscan,
-                               :,
-                               :,
-                               iproj,
-                               iread
-                               ]
-                )
-
-# # # #
-
-
-# FFT
-ogkspace = np.fft.ifftshift(ogkspace, axes=NUFFT.fft_dim)
-ogkspace = np.fft.ifft2(ogkspace, norm='ortho')
-ogkspace = np.fft.ifftshift(ogkspace, axes=NUFFT.fft_dim)
-result_adjoint = NUFFT._deapo_adj(ogkspace)
-
-
-## Forward operator of MRI
-MRImagingOperator.NUFFT.forward(inp * MRImagingOperator.coils)
-
-# forward NUFFT operation
-ogkspace = NUFFT._deapo_fwd(inp)
-# FFT
-ogkspace = np.fft.fftshift(ogkspace, axes=(-2, -1))
-ogkspace = np.fft.fft2(ogkspace, norm='ortho')
-ogkspace = np.fft.fftshift(ogkspace, axes=(-2, -1))
-# Resample on Spoke
-NUFFT._invgrid_lut(ogkspace)
-
-
-
-# When are forward and adjoint being used..?
-
-# Well lets find out in the optimizqation thingy!
-
-cgs = solver.CGReco(par)
-cgs.set_operator(MRImagingOperator)
-
-# Start reconstruction
-plt.imshow(np.real(rawdata * par["dens_cor"])[0])
-ogkspace = NUFFT._grid_lut(rawdata[None, :, None])
-recon_result = cgs.optimize((rawdata * par["dens_cor"]))
-
-b = MRImagingOperator.adjoint(inp)
-Ax = MRImagingOperator.adjoint(MRImagingOperator.forward(b[None, ...]))
-
-
-# Next step is to create an operator to solve our problems...
-# This object MRI... stores three new objects
-# - NUFFT operator (forward/adjoint)
-        # This guy on its turn gets
-            # Keiser Bessel Kernel
-            # Deapodization stuff
-            # Implementas forward/adjoint operators
-                # The forward/adjoint steps contain apodization and regridding. Show how this works.
-
-#   coil sensitivities
-#   conjugate of these coil sensitivities
-
-# But it also implements adjoint.forward operators..
-    # This is based on the forward/adjoint operators of the NUFFT object.
-
-
-# Besides the operator, we also need a way to solve our equaition Ax=b.
-# This is done by defining an CG recon object
-# This is just a simple and generic CG approach
-
-# Tada and done..
-# Result..?
-# Result without regreidding/adopization?
+""" Gradually move towards solving with CG """
 
 # TODO make a print dict function to make clear what is in this par dictionary
 # TODO make clear what dimensions are used where. Somewhere (for rawdata) at certain locations new axes are added. It is not clear directly why this is.
-
-
-# # # Misc stuff
-# Something to do with Voronoi areas...
-import scipy.spatial
-temp = np.array([trajectory[0].real, trajectory[0].imag]).reshape((-1, 2))
-res = scipy.spatial.Voronoi(temp.T)
-scipy.spatial.voronoi_plot_2d(res)
-
-n_points = len(res.points)
-dcf = np.zeros(n_points)
-for i_point in range(n_points):
-    i_region = res.point_region[i_point]
-    indices = res.regions[i_region]
-    dcf[i_point] = scipy.spatial.ConvexHull(res.vertices[indices]).volume
-
-dcf_reshp = dcf.reshape(trajectory[0].shape)
-fig, ax = plt.subplots(3)
-ax[0].imshow(np.sqrt(dcf_reshp[:, 1:-1]))
-ax[1].imshow(density_comp)
-ax[2].imshow((density_comp - np.sqrt(dcf_reshp))[:, 1:-1])

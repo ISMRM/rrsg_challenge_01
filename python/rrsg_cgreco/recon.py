@@ -160,7 +160,7 @@ def read_data(
       data_trajectory_key='trajectory'
       ):
     """
-    Handel data and possible undersampling.
+    Handle data and possible undersampling.
 
     Reading in h5 data from the path variable.
     Apply undersampling if specified.
@@ -191,7 +191,7 @@ def read_data(
              If no data file is specified
     """
     if not os.path.isfile(path):
-        raise ValueError("Given path is not a file.")
+        raise ValueError("Given path is not an existing file.")
 
     name = os.path.normpath(path)
     with h5py.File(name, 'r') as h5_dataset:
@@ -230,6 +230,10 @@ def read_data(
         )
       )
 
+    # TODO Shouldnt we use a standard amount of dimensions right from the start?
+    # e.g. [num_scans, num_coils, num_slc, grid_size, grid_size]
+    # And something similar for trajectories?
+    # Or at least exlain why we are adding a third dimension here.
     if trajectory.ndim < 3:
         trajectory = trajectory[None, ...]
 
@@ -352,7 +356,7 @@ def _run_reco(args):
     cgs = solver.CGReco(par)
     cgs.set_operator(MRImagingOperator)
     # Start reconstruction
-    recon_result = cgs.optimize(rawdata * par["dens_cor"])  # TODO I see dense correction here, but also at 304 linop.py
+    recon_result = cgs.optimize(data=rawdata * par["dens_cor"])  # TODO I see dense correction here, but also at 304 linop.py
     # Store results
     save_to_file(recon_result, args)
 

@@ -293,7 +293,7 @@ class NUFFT(Operator):
             ] = inp * self.deapodization
         return out
 
-    def _grid_lut(self, s):
+    def _grid_lut(self, s, return_mapping=False):
         gridcenter = self.grid_size / 2
 
         sg = np.zeros(
@@ -306,6 +306,7 @@ class NUFFT(Operator):
                 ),
             dtype=self.DTYPE
             )
+        grid_point_mapping = []  # Here for demonstration purposes.
 
         kdat = s * self.dens_comp  # TODO I see dense correction here, but also at 355 recon.py
         for iscan, iproj, iread in itertools.product(
@@ -313,6 +314,9 @@ class NUFFT(Operator):
                 range(self.num_proj),
                 range(self.num_reads)
                 ):
+
+            temp_mapping = []  # Here for demonstration purposes.
+            temp_mapping.append((iread, iproj))
 
             kx = self.trajectory[iscan, iproj, iread].imag
             ky = self.trajectory[iscan, iproj, iread].real
@@ -358,6 +362,8 @@ class NUFFT(Operator):
                             indy -= self.grid_size
                             indx = self.grid_size - indx
 
+                        temp_mapping.append((indx, indy))  # Here for demonstration purposes
+
                         sg[iscan, :, :, indy, indx] += (
                             kern * kdat[
                                 iscan,
@@ -367,7 +373,13 @@ class NUFFT(Operator):
                                 iread
                                 ]
                             )
-        return sg
+
+            grid_point_mapping.append(temp_mapping)  # Here for demonstration purposes
+
+        if return_mapping:
+            return sg, grid_point_mapping
+        else:
+            return sg
 
     def _invgrid_lut(self, sg):
         gridcenter = self.grid_size / 2

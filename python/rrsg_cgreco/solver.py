@@ -190,11 +190,11 @@ class CGReco:
               )
         start = time.time()
         result = self._cg_solve(
-            guess,
-            data[None, :, None, ...],
-            maxit,
-            lambd,
-            tol
+            x=guess,
+            data=data[None, :, None, ...],
+            iters=maxit,
+            lambd=lambd,
+            tol=tol
             )
         result[~np.isfinite(result)] = 0
         end = time.time()-start
