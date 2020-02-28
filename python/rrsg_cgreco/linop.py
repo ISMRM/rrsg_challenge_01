@@ -197,8 +197,8 @@ class NUFFT(Operator):
             par["num_reads"],
             klength)
 
-        deapo = 1 / kerneltable_FT.astype(DTYPE_real)
-        self.deapo = np.outer(deapo, deapo)
+        deapodization = 1 / kerneltable_FT.astype(DTYPE_real)
+        self.deapodization = np.outer(deapodization, deapodization)
 
         self.dens_comp = par["dens_cor"]
         self.trajectory = trajectory
@@ -260,15 +260,19 @@ class NUFFT(Operator):
         return self._invgrid_lut(ogkspace)
 
     def _deapo_adj(self, inp):
+        gridcenter = self.grid_size / 2
+
         return inp[
             ...,
-            int(self.grid_size/2-self.dimY/2):
-                int(self.grid_size/2+self.dimY/2),
-            int(self.grid_size/2-self.dimX/2):
-                int(self.grid_size/2+self.dimX/2)
-            ] * self.deapo
+            int(gridcenter-self.dimY/2):
+                int(gridcenter+self.dimY/2),
+            int(gridcenter-self.dimX/2):
+                int(gridcenter+self.dimX/2)
+            ] * self.deapodization
 
     def _deapo_fwd(self, inp):
+        gridcenter = self.grid_size / 2
+
         out = np.zeros(
             (
                 self.num_scans,
@@ -279,17 +283,17 @@ class NUFFT(Operator):
             dtype=self.DTYPE
             )
 
+
         out[
             ...,
-            int(self.grid_size/2-self.dimY/2):
-                int(self.grid_size/2+self.dimY/2),
-            int(self.grid_size/2-self.dimX/2):
-                int(self.grid_size/2+self.dimX/2)
-            ] = inp * self.deapo
+            int(gridcenter-self.dimY/2):
+                int(gridcenter+self.dimY/2),
+            int(gridcenter-self.dimX/2):
+                int(gridcenter+self.dimX/2)
+            ] = inp * self.deapodization
         return out
 
     def _grid_lut(self, s):
-
         gridcenter = self.grid_size / 2
 
         sg = np.zeros(

@@ -51,3 +51,29 @@ def get_golden_angle_dcf(k):
     w *= (np.pi / 4) / nspokes
     w = np.reshape(w, (N, nspokes)).T
     return w
+
+
+def get_voronoi_dcf(trajectory):
+    """
+    Made something. Needs more checks and everything. Oh and a correction for the outer cells.
+    That scales weirdly with the other cells
+    Args:
+        trajectory:
+
+    Returns:
+
+    """
+    import scipy.spatial
+    temp = np.array([trajectory.real, trajectory.imag]).reshape((-1, 2))
+    res = scipy.spatial.Voronoi(temp.T)
+    scipy.spatial.voronoi_plot_2d(res)
+
+    n_points = len(res.points)
+    dcf = np.zeros(n_points)
+    for i_point in range(n_points):
+        i_region = res.point_region[i_point]
+        indices = res.regions[i_region]
+        dcf[i_point] = scipy.spatial.ConvexHull(res.vertices[indices]).volume
+
+    dcf_reshp = dcf.reshape(trajectory.shape)
+    return dcf_reshp

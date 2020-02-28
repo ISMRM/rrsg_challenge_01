@@ -158,12 +158,12 @@ DTYPE = np.complex64
 DTYPE_real = np.float32
 
 # Density compensation function
-dcf = (np.sqrt(np.array(goldcomp.get_golden_angle_dcf(trajectory), dtype=DTYPE_real )).astype(DTYPE_real))
-dcf = np.require(np.abs(dcf), DTYPE_real, requirements='C')
-plt.imshow(dcf)
+density_comp = (np.sqrt(np.array(goldcomp.get_golden_angle_dcf(trajectory), dtype=DTYPE_real)).astype(DTYPE_real))
+density_comp = np.require(np.abs(density_comp), DTYPE_real, requirements='C')
+plt.imshow(density_comp)
 
 par_key = ['num_slc', 'num_scans', 'dimX', 'dimY', 'num_coils', 'N', 'num_proj', 'num_reads', 'dens_cor']
-par_val = [num_slc, num_scans, dimX, dimY, num_coils, N, num_proj, num_reads, dcf]
+par_val = [num_slc, num_scans, dimX, dimY, num_coils, N, num_proj, num_reads, density_comp]
 par = dict(zip(par_key, par_val))
 
 # This gives us 'coils' and 'phase_map'
@@ -190,12 +190,123 @@ plt.title('kernel table')
 
 # To correct for certain transformation, we want to adopize the data as welll
 # Based on kerneltable FT
-plt.imshow(NUFFT.deapo)
+plt.imshow(NUFFT.deapodization)
 plt.title('deapodiztion')
+
+## Adjoint of operator MRI
+np.sum(MRImagingOperator.NUFFT.adjoint(inp) * MRImagingOperator.conj_coils, 1)
+
 
 # Adjoint NUFFT operation
 # Grid k-space
 ogkspace = NUFFT._grid_lut(trajectory[np.newaxis])
+
+
+# # # # But how does THIS work?
+s = rawdata[None, :, None]
+trajectory = trajectory[np.newaxis]
+grid_size = num_reads
+overgridfactor = ogf
+klength = 2000
+kwidth = 5
+gridcenter = grid_size / 2
+from rrsg_cgreco._helper_fun.calckbkernel import calculate_keiser_bessel_kernel
+kerneltable, kerneltable_FT, u = calculate_keiser_bessel_kernel(kwidth, overgridfactor, num_reads, klength)
+n_kernel_points = kerneltable.size
+plt.plot(u, kerneltable)  # Zoiets...?
+
+sg = np.zeros(
+    (
+        num_scans,
+        num_coils,
+        num_slc,
+        grid_size,
+        grid_size
+    ),
+    dtype=DTYPE
+)
+import itertools
+kdat = s * density_comp  # TODO I see dense correction here, but also at 355 recon.py
+# Difference with non density compensated data
+plot_3d_list(kdat[0,:,0], augm='np.abs')
+plot_3d_list(s[0,:,0], augm='np.abs')
+
+for iscan, iproj, iread in itertools.product(
+        range(num_scans),
+        range(num_proj),
+        range(num_reads)):
+
+    kx = trajectory[iscan, iproj, iread].imag
+    ky = trajectory[iscan, iproj, iread].real
+    # The trajectory and the point we are looking at...
+    fig, ax = plt.subplots()
+    ax.scatter(kx, ky, 100, c='k', marker='*')
+    ax.plot(trajectory[0].real, trajectory[0].imag, 'r', alpha=0.25)
+
+    ixmin = int((kx - kwidth) * grid_size + gridcenter)
+    ixmax = int((kx + kwidth) * grid_size + gridcenter) + 1
+    iymin = int((ky - kwidth) * grid_size + gridcenter)
+    iymax = int((ky + kwidth) * grid_size + gridcenter) + 1
+
+    plt.vlines(x=ixmin, ymin=iymin, ymax=iymax)
+    plt.vlines(x=ixmax, ymin=iymin, ymax=iymax)
+    plt.hlines(y=iymin, xmin=ixmin, xmax=ixmax)
+    plt.hlines(y=iymax, xmin=ixmin, xmax=ixmax)
+
+    # TODO Why wont we loop from range(-kwidth, kwdith, 1/grid_size) instead..?
+    # a = np.arange(-kwidth, kwidth, 1 / grid_size)
+    # len(a) == ixmax-ixmin
+    for gcount1 in np.arange(ixmin, ixmax + 1, 100):
+        dkx = (gcount1 - gridcenter) / grid_size - kx
+
+        for gcount2 in np.arange(iymin, iymax + 1, 100):
+            dky = (gcount2 - gridcenter) / grid_size - ky
+            dk = np.sqrt(dkx ** 2 + dky ** 2)
+
+            if dk < kwidth:
+                # Here we correct for the distance between the kernel points...
+                fracind = dk / kwidth * (n_kernel_points - 1)
+                kernelind = int(fracind)
+                fracdk = fracind - kernelind
+
+                kern = (
+                        kerneltable[kernelind] * (1 - fracdk) +
+                        kerneltable[kernelind + 1] * fracdk
+                )
+                plt.scatter(gcount1, gcount2, 50, c='k')
+                indx = gcount1
+                indy = gcount2
+
+                if gcount1 < 0:
+                    indx += grid_size
+                    indy = grid_size - indy
+
+                if gcount1 >= grid_size:
+                    indx -= grid_size
+                    indy = grid_size - indy
+
+                if gcount2 < 0:
+                    indy += grid_size
+                    indx = grid_size - indx
+
+                if gcount2 >= grid_size:
+                    indy -= grid_size
+                    indx = grid_size - indx
+
+                plt.scatter(indx, indy, 50, c='r')
+                plt.plot([gcount1, indx], [gcount2, indy], 'b', alpha=0.01)
+                sg[iscan, :, :, indy, indx] += (
+                        kern * kdat[
+                               iscan,
+                               :,
+                               :,
+                               iproj,
+                               iread
+                               ]
+                )
+
+# # # #
+
 
 # FFT
 ogkspace = np.fft.ifftshift(ogkspace, axes=NUFFT.fft_dim)
@@ -203,8 +314,9 @@ ogkspace = np.fft.ifft2(ogkspace, norm='ortho')
 ogkspace = np.fft.ifftshift(ogkspace, axes=NUFFT.fft_dim)
 result_adjoint = NUFFT._deapo_adj(ogkspace)
 
-## Adjoint of operator MRI
-np.sum(MRImagingOperator.NUFFT.adjoint(inp) * MRImagingOperator.conj_coils, 1)
+
+## Forward operator of MRI
+MRImagingOperator.NUFFT.forward(inp * MRImagingOperator.coils)
 
 # forward NUFFT operation
 ogkspace = NUFFT._deapo_fwd(inp)
@@ -214,8 +326,7 @@ ogkspace = np.fft.fft2(ogkspace, norm='ortho')
 ogkspace = np.fft.fftshift(ogkspace, axes=(-2, -1))
 # Resample on Spoke
 NUFFT._invgrid_lut(ogkspace)
-## Forward operator of MRI
-MRImagingOperator.NUFFT.forward(inp * MRImagingOperator.coils)
+
 
 
 # When are forward and adjoint being used..?
@@ -260,3 +371,24 @@ Ax = MRImagingOperator.adjoint(MRImagingOperator.forward(b[None, ...]))
 
 # TODO make a print dict function to make clear what is in this par dictionary
 # TODO make clear what dimensions are used where. Somewhere (for rawdata) at certain locations new axes are added. It is not clear directly why this is.
+
+
+# # # Misc stuff
+# Something to do with Voronoi areas...
+import scipy.spatial
+temp = np.array([trajectory[0].real, trajectory[0].imag]).reshape((-1, 2))
+res = scipy.spatial.Voronoi(temp.T)
+scipy.spatial.voronoi_plot_2d(res)
+
+n_points = len(res.points)
+dcf = np.zeros(n_points)
+for i_point in range(n_points):
+    i_region = res.point_region[i_point]
+    indices = res.regions[i_region]
+    dcf[i_point] = scipy.spatial.ConvexHull(res.vertices[indices]).volume
+
+dcf_reshp = dcf.reshape(trajectory[0].shape)
+fig, ax = plt.subplots(3)
+ax[0].imshow(np.sqrt(dcf_reshp[:, 1:-1]))
+ax[1].imshow(density_comp)
+ax[2].imshow((density_comp - np.sqrt(dcf_reshp))[:, 1:-1])
