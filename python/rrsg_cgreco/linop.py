@@ -217,12 +217,11 @@ class NUFFT(Operator):
         by a 2D fft, implemented in numpy and final deapodization to
         compensate for the convolution of the gridding kernel on the data.
 
-        Args
-        ----
-            sg (Numpy.Array):
-                The complex image data.
-            s (Numpy.Array):
-                The non-uniformly gridded k-space
+        Args:
+            inp:
+
+        Returns:
+
         """
         # Grid k-space
         ogkspace = self._grid_lut(inp)
@@ -242,12 +241,11 @@ class NUFFT(Operator):
         applying the deapodization followed by fourier transformation and
         finally resampling of the cartesian data to the non-uniform trajectory.
 
-        Args
-        ----
-            s (Numpy.Array):
-                The non-uniformly gridded k-space.
-            sg (Numpy.Array):
-                The complex image data.
+        Args:
+            inp:
+
+        Returns:
+
         """
         # Deapodization and Scaling
         ogkspace = self._deapo_fwd(inp)

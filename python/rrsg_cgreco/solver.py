@@ -191,6 +191,7 @@ class CGReco:
         start = time.time()
         result = self._cg_solve(
             x=guess,
+            # TODO again. Make sure that this is not needed here.
             data=data[None, :, None, ...],
             iters=maxit,
             lambd=lambd,
