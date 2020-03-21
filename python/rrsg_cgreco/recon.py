@@ -157,7 +157,8 @@ def read_data(
       path,
       acc,
       data_rawdata_key='rawdata',
-      data_trajectory_key='trajectory'
+      data_trajectory_key='trajectory',
+      noise_key='noise'
       ):
     """
     Handle data and possible undersampling.
@@ -197,20 +198,24 @@ def read_data(
     with h5py.File(name, 'r') as h5_dataset:
         if "heart" in name:
             if acc == 2:
-                trajectory = h5_dataset.get(data_trajectory_key)[:, :, :33]
-                rawdata = h5_dataset.get(data_rawdata_key)[:, :, :33, :]
+                trajectory = h5_dataset[data_trajectory_key][:, :, :33]
+                rawdata = h5_dataset[data_rawdata_key][:, :, :33, :]
             elif acc == 3:
-                trajectory = h5_dataset.get(data_trajectory_key)[:, :, :22]
-                rawdata = h5_dataset.get(data_rawdata_key)[:, :, :22, :]
+                trajectory = h5_dataset[data_trajectory_key][:, :, :22]
+                rawdata = h5_dataset[data_rawdata_key][:, :, :22, :]
             elif acc == 4:
-                trajectory = h5_dataset.get(data_trajectory_key)[:, :, :11]
-                rawdata = h5_dataset.get(data_rawdata_key)[:, :, :11, :]
+                trajectory = h5_dataset[data_trajectory_key][:, :, :11]
+                rawdata = h5_dataset[data_rawdata_key][:, :, :11, :]
             else:
-                trajectory = h5_dataset.get(data_trajectory_key)[...]
-                rawdata = h5_dataset.get(data_rawdata_key)[...]
+                trajectory = h5_dataset[data_trajectory_key][...]
+                rawdata = h5_dataset[data_rawdata_key][...]
         else:
-            trajectory = h5_dataset.get(data_trajectory_key)[:, :, ::acc]
-            rawdata = h5_dataset.get(data_rawdata_key)[:, :, ::acc, :]
+            trajectory = h5_dataset[data_trajectory_key][:, :, ::acc]
+            rawdata = h5_dataset[data_rawdata_key][:, :, ::acc, :]
+        if noise_key in h5_dataset.keys():
+            noise_scan = h5_dataset[noise_key][()]
+        else:
+            noise_scan = None
 
     # Squeeze dummy dimension and transpose to C-style ordering.
     rawdata = np.squeeze(rawdata.T)
@@ -237,7 +242,7 @@ def read_data(
     if trajectory.ndim < 3:
         trajectory = trajectory[None, ...]
 
-    return rawdata, trajectory
+    return rawdata, trajectory, noise_scan
 
 
 def setup_parameter_dict(
@@ -330,7 +335,7 @@ def save_to_file(
     f = h5py.File(
         "CG_reco_inscale_" + str(args.inscale) + "_denscor_"
         + str(args.denscor) + "_reduction_" + str(args.acc)
-        + "_acc_" + str(args.acc),
+        + "_acc_" + str(args.acc) + ".h5",
         "w"
         )
     f.create_dataset(
@@ -344,11 +349,29 @@ def save_to_file(
     os.chdir(cwd)
 
 
+def _decor_noise(data, noise, par):
+    if noise is None:
+        return data
+    else:
+        cov = np.cov(noise)
+        L = np.linalg.cholesky(cov)
+        invL = np.linalg.inv(L)
+        data = np.reshape(data, (par["num_coils"], -1))
+        data = invL@data
+        data = np.reshape(data,
+                          (par["num_coils"],
+                           par["num_proj"],
+                           par["num_reads"]))
+        return data
+
+
 def _run_reco(args):
     # Read input data
-    rawdata, trajectory = read_data(args.data, args.acc)
+    rawdata, trajectory, noise = read_data(args.data, args.acc)
     # Setup parameters
     par = setup_parameter_dict(rawdata, trajectory, args.ogf)
+    # Decorrelate Coil channels if noise scan is present
+    rawdata = _decor_noise(rawdata, noise, par)
     # Get coil sensitivities in the parameter dict
     estimate_coil_sensitivities(rawdata, trajectory, par)
     # Get operator
@@ -356,7 +379,10 @@ def _run_reco(args):
     cgs = solver.CGReco(par)
     cgs.set_operator(MRImagingOperator)
     # Start reconstruction
-    recon_result = cgs.optimize(data=rawdata * par["dens_cor"])  # TODO I see dense correction here, but also at 304 linop.py
+    # Data needs to be multiplied with the sqrt of dense_cor to assure that
+    # forward and adjoint application of the NUFFT is adjoint with each other.
+    # dens_cor itself is save din the par dict as the sqrt.
+    recon_result = cgs.optimize(data=rawdata * par["dens_cor"])
     # Store results
     save_to_file(recon_result, args)
 

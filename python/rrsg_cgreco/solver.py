@@ -115,7 +115,8 @@ class CGReco:
         -------
             numpy.Array: Left hand side of CG normal equation
         """
-        assert self.operator is not None, "Please set an operator with the set_operation method"
+        assert self.operator is not None, \
+            "Please set an operator with the set_operation method"
 
         return self.operator_rhs(self.operator.forward(inp[None, ...]))
 
@@ -135,9 +136,51 @@ class CGReco:
         -------
             numpy.Array: Right hand side of CG normal equation
         """
-        assert self.operator is not None, "Please set an operator with the set_operation method"
+        assert self.operator is not None, \
+            "Please set an operator with the set_operation method"
 
         return self.operator.adjoint(inp)
+
+    def kspace_filter(self, x):
+        print("Performing k-space filtering")
+        beta = 100
+        kc = 25
+        kpoints = np.arange(-np.floor(self.operator.num_reads/2),
+                            np.ceil(self.operator.num_reads/2))
+        filter_vec = 1/2+1/np.pi*np.arctan(beta*(kc - np.abs(kpoints)/kc))
+        filter_kspace = np.outer(filter_vec, filter_vec)
+        gridcenter = self.operator.num_reads / 2
+        for j in range(x.shape[0]):
+            tmp = np.zeros(
+                (
+                    self.num_scans,
+                    self.num_slc,
+                    self.operator.num_reads,
+                    self.operator.num_reads),
+                dtype=self.operator.DTYPE
+                )
+
+            tmp[
+                ...,
+                int(gridcenter-self.dimY/2):
+                    int(gridcenter+self.dimY/2),
+                int(gridcenter-self.dimX/2):
+                    int(gridcenter+self.dimX/2)
+                ] = x[j]
+
+            tmp = np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(
+                np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(
+                        tmp, (-2, -1)), norm='ortho'),
+                        (-2, -1))*filter_kspace, (-2, -1)),
+                        norm='ortho'), (-2, -1))
+            x[j] = tmp[
+                ...,
+                int(gridcenter-self.dimY/2):
+                    int(gridcenter+self.dimY/2),
+                int(gridcenter-self.dimX/2):
+                    int(gridcenter+self.dimX/2)
+                ]
+        return x
 
 ###############################################################################
 #   Start a Reconstruction ####################################################
@@ -203,7 +246,7 @@ class CGReco:
         print("Elapsed time: %f seconds" % (end))
         print("-"*80)
         print("done")
-        return result
+        return self.kspace_filter(result*self.incor)
 
 ###############################################################################
 #   Conjugate Gradient optimization ###########################################

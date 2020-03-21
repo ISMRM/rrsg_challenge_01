@@ -179,7 +179,8 @@ class NUFFT(Operator):
                 The width of the sampling kernel for re-gridding of non-uniform
                 kspace samples.
             fft_dim (tuple):
-                A tuple containing the axes over which the Fourier Transform is performed.
+                A tuple containing the axes over which the Fourier Transform
+                is performed.
             klength (int):
                 The length of the kernel lookup table which samples the
                 continuous gridding kernel.
@@ -281,7 +282,6 @@ class NUFFT(Operator):
             dtype=self.DTYPE
             )
 
-
         out[
             ...,
             int(gridcenter-self.dimY/2):
@@ -306,7 +306,7 @@ class NUFFT(Operator):
             )
         grid_point_mapping = []  # Here for demonstration purposes.
 
-        kdat = s * self.dens_comp  # TODO I see dense correction here, but also at 355 recon.py
+        kdat = s * self.dens_comp
         for iscan, iproj, iread in itertools.product(
                 range(self.num_scans),
                 range(self.num_proj),
@@ -482,7 +482,8 @@ class MRIImagingModel(Operator):
                 (num_slc),
                 number of scans (num_scans), image dimensions (dimX, dimY),
                 number of coils (num_coils), sampling pos (num_reads)
-                and read outs (num_proj) and the complex coil sensitivities (coils).
+                and read outs (num_proj) and the complex coil sensitivities
+                (coils).
             trajectory (numpy.array):
                 Complex trajectory information for kx/ky points.
             DTYPE (Numpy.Type):
