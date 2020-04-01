@@ -14,4 +14,4 @@ install:
 
 script: 
   - pytest ./python/test/
-  - rrsg_cgreco --datafile ./python/rrsg_cgreco/rawdata_brain_radial_96proj_12ch.h5 --config ./python/rrsg_cgrecp/default.txt
+  - rrsg_cgreco --datafile ./python/rrsg_cgreco/rawdata_brain_radial_96proj_12ch.h5
