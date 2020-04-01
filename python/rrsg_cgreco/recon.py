@@ -25,7 +25,9 @@ import numpy as np
 import os
 import h5py
 import argparse
-from rrsg_cgreco._helper_fun import goldcomp as goldcomp
+import configparser
+from rrsg_cgreco._helper_fun.density_compensation \
+    import get_density_from_gridding 
 from rrsg_cgreco._helper_fun.est_coils import estimate_coil_sensitivities
 import rrsg_cgreco.linop as linop
 import rrsg_cgreco.solver as solver
@@ -35,12 +37,9 @@ DTYPE_real = np.float32
 
 
 def _get_args(
-      config='default',
-      inscale=True,
-      denscor=True,
-      data='rawdata_brain_radial_96proj_12ch.h5',
-      acc=1,
-      ogf='1.706'
+      configfile='default',
+      pathtofile='rawdata_brain_radial_96proj_12ch.h5',
+      undesampling_factor=1
       ):
     """
     Parse command line arguments.
@@ -49,27 +48,20 @@ def _get_args(
     ----
         config (string):
             Name of config file to use (default).
-            The file is assumed to be in the same folder where the script is
-            run. If not specified, use default parameters.
-
-        inscale (bool):
+            The file is assumed to be in the same folder where the script
+            is run. If not specified, use default parameters.
+        do_inscale (bool):
             Wether to perform intensity scaling. Defaults to True.
-
-        denscor (bool):
+        do_denscor (bool):
             Switch to choose between reconstruction with (True) or
             without (False) density compensation. Defaults to True.
-
-        data (string):
+        pathtofile (string):
             Full qualified path to the h5 data file.
 
-        acc (int):
-            Desired acceleration compared to the number of
+        undesampling_factor (int):
+            Desired undesampling compared to the number of
             spokes provided in data.
             E.g. 1 uses all available spokes 2 every 2nd.
-
-        ogf (string):
-            Ratio between Cartesian cropped grid and full
-            regridded k-space grid.
 
     Returns
     -------
@@ -77,41 +69,27 @@ def _get_args(
     """
     parser = argparse.ArgumentParser(description='CG Sense Reconstruction')
     parser.add_argument(
-        '--config', default=config, dest='config',
+        '--config', default=configfile, dest='configfile',
         help='Name of config file to use (assumed to be in the same folder). '
-        'If not specified, use default parameters.'
-        )
+             'If not specified, use default parameters.'
+             )
     parser.add_argument(
-        '--inscale', default=inscale, type=int, dest='inscale',
-        help='Perform Intensity Scaling.'
-        )
-    parser.add_argument(
-        '--denscor', default=denscor, type=int, dest='denscor',
-        help='Perform density correction.'
-        )
-    parser.add_argument(
-        '--data', default=data, dest='data',
+        '--pathtofile', default=pathtofile, dest='pathtofile',
         help='Path to the h5 data file.'
         )
     parser.add_argument(
-        '--acc', default=acc, type=int, dest='acc',
-        help='Desired acceleration factor.'
-        )
-    parser.add_argument(
-        '--ogf', default=ogf, type=str, dest='ogf',
-        help='Overgridfactor. 1.706 for Brain, 1+1/3 for heart data.'
+        '--acc', default=undesampling_factor, type=int, 
+        dest='undesampling_factor',
+        help='Desired undesampling factor.'
         )
     args = parser.parse_args()
     return args
 
 
 def run(
-      config='default',
-      inscale=True,
-      denscor=True,
-      data='rawdata_brain_radial_96proj_12ch.h5',
-      acc=1,
-      ogf='1.706'
+      configfile='default',
+      pathtofile='rawdata_brain_radial_96proj_12ch.h5',
+      undesampling_factor=1,
       ):
     """
     Run the CG reco of radial data.
@@ -133,35 +111,32 @@ def run(
         data (string):
             Full qualified path to the h5 data file.
 
-        acc (int):
+        undesampling_factor (int):
              Desired acceleration compared to the number of
              spokes provided in data.
              E.g. 1 uses all available spokes 2 every 2nd.
 
-        ogf (string):
+        overgridding_factor (string):
             Ratio between Cartesian cropped grid and full regridded
             k-space grid.
     """
     args = _get_args(
-        config,
-        inscale,
-        denscor,
-        data,
-        acc,
-        ogf
+        configfile,
+        pathtofile,
+        undesampling_factor
         )
     _run_reco(args)
 
 
 def read_data(
-      path,
-      acc,
+      pathtofile,
+      undesampling_factor,
       data_rawdata_key='rawdata',
       data_trajectory_key='trajectory',
       noise_key='noise'
       ):
     """
-    Handle data and possible undersampling.
+    Handle data and possible undersampling. 
 
     Reading in h5 data from the path variable.
     Apply undersampling if specified.
@@ -174,7 +149,7 @@ def read_data(
     ----
         path (string):
             Full qualified path to the .h5 data file.
-        acc (int):
+        undesampling_factor (int):
             Desired acceleration compared to the number of
             spokes provided in data.
             E.g. 1 uses all available spokes 2 every 2nd.
@@ -191,27 +166,29 @@ def read_data(
          ValueError:
              If no data file is specified
     """
-    if not os.path.isfile(path):
+    if not os.path.isfile(pathtofile):
         raise ValueError("Given path is not an existing file.")
 
-    name = os.path.normpath(path)
+    name = os.path.normpath(pathtofile)
     with h5py.File(name, 'r') as h5_dataset:
         if "heart" in name:
-            if acc == 2:
+            if undesampling_factor == 2:
                 trajectory = h5_dataset[data_trajectory_key][:, :, :33]
                 rawdata = h5_dataset[data_rawdata_key][:, :, :33, :]
-            elif acc == 3:
+            elif undesampling_factor == 3:
                 trajectory = h5_dataset[data_trajectory_key][:, :, :22]
                 rawdata = h5_dataset[data_rawdata_key][:, :, :22, :]
-            elif acc == 4:
+            elif undesampling_factor == 4:
                 trajectory = h5_dataset[data_trajectory_key][:, :, :11]
                 rawdata = h5_dataset[data_rawdata_key][:, :, :11, :]
             else:
                 trajectory = h5_dataset[data_trajectory_key][...]
                 rawdata = h5_dataset[data_rawdata_key][...]
         else:
-            trajectory = h5_dataset[data_trajectory_key][:, :, ::acc]
-            rawdata = h5_dataset[data_rawdata_key][:, :, ::acc, :]
+            trajectory = h5_dataset[data_trajectory_key][
+                :, :, ::undesampling_factor]
+            rawdata = h5_dataset[data_rawdata_key][
+                :, :, ::undesampling_factor, :]
         if noise_key in h5_dataset.keys():
             noise_scan = h5_dataset[noise_key][()]
         else:
@@ -221,35 +198,27 @@ def read_data(
     rawdata = np.squeeze(rawdata.T)
 
     # Normalize trajectory to the range of (-1/2)/(1/2)
-    norm_trajectory = 2 * np.max(trajectory[0])
+    norm_trajectory = 2 * np.max(np.abs(trajectory))
 
     trajectory = (
       np.require(
-        (
-            trajectory[0] / norm_trajectory
-            + 1j *
-            trajectory[1] / norm_trajectory
-            )
-        .T,
+        (trajectory / norm_trajectory).T,
         requirements='C'
         )
       )
 
-    # TODO Shouldnt we use a standard amount of dimensions right from the start?
-    # e.g. [num_scans, num_coils, num_slc, grid_size, grid_size]
-    # And something similar for trajectories?
-    # Or at least exlain why we are adding a third dimension here.
-    if trajectory.ndim < 3:
-        trajectory = trajectory[None, ...]
+    # Check if rawdata and trajectory dimensions match
+    assert trajectory.shape[:-1] == rawdata.shape[-2:], \
+        "Rawdata and trajectory should have the same number "\
+        "of read/projection pairs."
 
     return rawdata, trajectory, noise_scan
 
 
 def setup_parameter_dict(
+      configfile,
       rawdata,
-      traj,
-      ogf,
-      traj_type='radial'
+      trajectory
       ):
     """
     Parameter dict generation.
@@ -258,9 +227,6 @@ def setup_parameter_dict(
     ----
         rawdata (np.complex64):
             The raw k-space data
-        ogf (string):
-            Over-gridding factor. Ratio between Cartesian cropped grid and full
-            regridded k-space grid.
 
     Returns
     -------
@@ -269,46 +235,77 @@ def setup_parameter_dict(
             number of coils and image dimension in 2D.
     """
     # Create empty dict
-    par = {}
+    parameter = {}
+    config = configparser.ConfigParser()
+    config.read(configfile+".txt")
+    for sectionkey in config.sections():
+        parameter[sectionkey] = {}
+        for valuekey in config[sectionkey].keys():
+            if "do_" in valuekey:
+                try:  
+                    parameter[sectionkey][valuekey] = config.getboolean(
+                        sectionkey, 
+                        valuekey)  
+                except:
+                    parameter[sectionkey][valuekey] = config.get(
+                        sectionkey, 
+                        valuekey)
+            else:
+                try:
+                    parameter[sectionkey][valuekey] = config.getint(
+                        sectionkey, 
+                        valuekey)
+                except:
+                    try:
+                        parameter[sectionkey][valuekey] = config.getfloat(
+                            sectionkey, 
+                            valuekey)
+                    except:
+                        parameter[sectionkey][valuekey] = config.get(
+                            sectionkey, 
+                            valuekey)
+    
+    if parameter["Data"]["precission"].lower() == "single":
+        parameter["Data"]["DTYPE"] = np.complex64
+        parameter["Data"]["DTYPE_real"] = np.float32
+    elif parameter["Data"]["precission"].lower() == "double":
+        parameter["Data"]["DTYPE"] = np.complex128
+        parameter["Data"]["DTYPE_real"] = np.float64    
+    else:
+        raise ValueError("Precission needs to be set to single or double.")
+    
     [n_ch, n_spokes, num_reads] = rawdata.shape
 
-    par["ogf"] = float(eval(ogf))
-    dimX, dimY = [int(num_reads/par["ogf"]), int(num_reads/par["ogf"])]
-
-    # Calculate density compensation for radial data.
-    #############
-    # This needs to be adjusted for spirals!!!!!
-    #############
-    par["dens_cor"] = (
-        np.sqrt(
-            np.array(
-                goldcomp.get_golden_angle_dcf(traj),
-                dtype=DTYPE_real
+    parameter["Data"]["num_coils"] = n_ch
+    parameter["Data"]["image_dim"] = int(
+        num_reads/parameter["Data"]["overgridfactor"]
+        )
+    parameter["Data"]["num_reads"] = num_reads
+    parameter["Data"]["num_proj"] = n_spokes
+    
+    # Calculate density compensation for non-cartesian data.
+    if parameter["Data"]["do_density_correction"]:
+        FFT = linop.NUFFT(data_par=parameter["Data"], 
+                          fft_par=parameter["FFT"],
+                          trajectory=trajectory)
+        parameter["FFT"]["gridding_matrix"] = FFT.gridding_mat
+        parameter["FFT"]["dens_cor"] = np.sqrt(
+            get_density_from_gridding(
+                parameter["Data"], 
+                parameter["FFT"]["gridding_matrix"]
                 )
             )
-        .astype(DTYPE_real)
-        )
-    par["dens_cor"] = (
-        np.require(
-            np.abs(par["dens_cor"]),
-            DTYPE_real,
-            requirements='C'
+    else:
+        parameter["FFT"]["dens_cor"] = np.ones(
+            trajectory.shape[:-1],
+            dtype=parameter["Data"]["DTYPE_real"]
             )
-        )
-
-    par["num_coils"] = n_ch
-    par["dimY"] = dimY
-    par["dimX"] = dimX
-    par["num_reads"] = num_reads
-    par["num_proj"] = n_spokes
-    par["num_scans"] = 1
-    par["num_slc"] = 1
-
-    return par
+    return parameter
 
 
 def save_to_file(
       result,
+      data_par,
       args
       ):
     """
@@ -322,9 +319,9 @@ def save_to_file(
          Console arguments passed to the script.
     """
     outdir = ""
-    if "heart" in args.data:
+    if "heart" in args.pathtofile:
         outdir += "/heart"
-    elif "brain" in args.data:
+    elif "brain" in args.pathtofile:
         outdir += "/brain"
     if not os.path.exists('./output'):
         os.makedirs('output')
@@ -333,9 +330,10 @@ def save_to_file(
     cwd = os.getcwd()
     os.chdir("./output" + outdir)
     f = h5py.File(
-        "CG_reco_inscale_" + str(args.inscale) + "_denscor_"
-        + str(args.denscor) + "_reduction_" + str(args.acc)
-        + "_acc_" + str(args.acc) + ".h5",
+        "CG_reco_inscale_" + str(data_par["do_intensity_scale"]) + "_denscor_"
+        + str(data_par["do_density_correction"]) + 
+        "_reduction_" + str(args.undesampling_factor)
+        + ".h5",
         "w"
         )
     f.create_dataset(
@@ -367,22 +365,38 @@ def _decor_noise(data, noise, par):
 
 def _run_reco(args):
     # Read input data
-    rawdata, trajectory, noise = read_data(args.data, args.acc)
+    kspace_data, trajectory, noise = read_data(
+        pathtofile=args.pathtofile, 
+        undesampling_factor=args.undesampling_factor
+        )
     # Setup parameters
-    par = setup_parameter_dict(rawdata, trajectory, args.ogf)
+    parameter = setup_parameter_dict(
+        args.configfile,
+        rawdata=kspace_data, 
+        trajectory=trajectory)
     # Decorrelate Coil channels if noise scan is present
-    rawdata = _decor_noise(rawdata, noise, par)
+    kspace_data = _decor_noise(
+        kspace_data, 
+        noise, 
+        parameter["Data"])
     # Get coil sensitivities in the parameter dict
-    estimate_coil_sensitivities(rawdata, trajectory, par)
+    estimate_coil_sensitivities(
+        kspace_data, 
+        trajectory, 
+        parameter)
     # Get operator
-    MRImagingOperator = linop.MRIImagingModel(par, trajectory)
-    cgs = solver.CGReco(par)
+    MRImagingOperator = linop.MRIImagingModel(parameter, trajectory)
+    cgs = solver.CGReco(
+        data_par=parameter["Data"],
+        optimizer_par=parameter["Optimizer"])
     cgs.set_operator(MRImagingOperator)
     # Start reconstruction
     # Data needs to be multiplied with the sqrt of dense_cor to assure that
     # forward and adjoint application of the NUFFT is adjoint with each other.
-    # dens_cor itself is save din the par dict as the sqrt.
-    recon_result = cgs.optimize(data=rawdata * par["dens_cor"])
+    # dens_cor itself is saved in the par dict as the sqrt.
+    recon_result = cgs.optimize(
+        data=kspace_data * parameter["FFT"]["dens_cor"]
+        )
     # Store results
     save_to_file(recon_result, args)
 
@@ -390,29 +404,18 @@ def _run_reco(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='CG Sense Reconstruction')
     parser.add_argument(
-        '--config', default='default', dest='config',
-        help='Name of config file to use (assumed to be in the same folder). '
+        '--config', default='default', dest='configfile',
+        help='Path to the config file to use. '
              'If not specified, use default parameters.'
              )
     parser.add_argument(
-        '--inscale', default=1, type=int, dest='inscale',
-        help='Perform Intensity Scaling.'
+        '--data', default='rawdata_brain_radial_96proj_12ch.h5', 
+        dest='pathtofile',
+        help='Path to the .h5 data file.'
         )
     parser.add_argument(
-        '--denscor', default=1, type=int, dest='denscor',
-        help='Perform density correction.'
-        )
-    parser.add_argument(
-        '--data', default='rawdata_brain_radial_96proj_12ch.h5', dest='data',
-        help='Path to the h5 data file.'
-        )
-    parser.add_argument(
-        '--acc', default=1, type=int, dest='acc',
+        '--acc', default=1, type=int, dest='undesampling_factor',
         help='Desired acceleration factor.'
-        )
-    parser.add_argument(
-        '--ogf', default='1.706', type=str, dest='ogf',
-        help='Overgridfactor. 1.706 for Brain, 1+1/3 for heart data.'
         )
     args = parser.parse_args()
     _run_reco(args)

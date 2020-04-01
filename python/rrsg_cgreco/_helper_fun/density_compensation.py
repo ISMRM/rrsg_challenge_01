@@ -22,6 +22,33 @@ limitations under the License.
 """
 import numpy as np
 
+def get_density_from_gridding(par_data, gridding_matrix):
+    """
+    Density compensation based on the used trajectory.
+
+    Args
+    ----
+      par_data (dict):
+         Dictionary holding data propierties
+      gridding_matrix (sparse_matrix):
+          Sparse matrix realizing the gridding via matrix-vector 
+          multiplication.
+
+    Returns
+    -------
+      numpy.array
+        Density compensation
+    """
+    density = gridding_matrix.transpose()@(
+        np.ones(gridding_matrix.shape[0]))
+    density /= np.max(density)
+    density[density!=0] = 1/density[density!=0]
+    density = gridding_matrix@density
+    density = np.reshape(
+        density, 
+        (par_data["num_proj"], par_data["num_reads"])
+        )
+    return density.astype(par_data["DTYPE_real"])
 
 def get_golden_angle_dcf(k):
     """
@@ -37,10 +64,10 @@ def get_golden_angle_dcf(k):
       numpy.array
         Ramp for golden angle density compensation
     """
-    if len(np.shape(k)) == 2:
-        nspokes, N = np.shape(k)
-    elif len(np.shape(k)) == 3:
-        NScan, nspokes, N = np.shape(k)
+    if len(np.shape(k)[:-1]) == 2:
+        nspokes, N = np.shape(k)[:-1]
+    elif len(np.shape(k)[:-1]) == 3:
+        NScan, nspokes, N = np.shape(k)[:-1]
     else:
         raise ValueError("Passed trajectory has the wrong "
                          "number of dumensions.")
@@ -48,7 +75,7 @@ def get_golden_angle_dcf(k):
     w = np.abs(np.linspace(-N/2, N/2, N))/(N/2)  # ramp from -1...1
     w = np.repeat(w, nspokes, 0)
     # w /= np.min(w)
-    w *= (np.pi / 4) / nspokes
+    w *= (N * np.pi / 4) / nspokes
     w = np.reshape(w, (N, nspokes)).T
     return w
 

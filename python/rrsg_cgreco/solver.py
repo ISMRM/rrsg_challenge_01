@@ -51,7 +51,7 @@ class CGReco:
             The real value precision. Defaults to float32
     """
 
-    def __init__(self, par, DTYPE=np.complex64, DTYPE_real=np.float32):
+    def __init__(self, data_par, optimizer_par):
         """
         CG object constructor.
 
@@ -69,15 +69,17 @@ class CGReco:
             DTYPE_real (Numpy.Type):
                 The real precission type. Currently float32 is used.
         """
-        self.dimX = par["dimX"]
-        self.dimY = par["dimY"]
-        self.num_coils = par["num_coils"]
-        self.num_scans = par["num_scans"]
-        self.num_slc = par["num_slc"]
-        self.DTYPE = DTYPE
-        self.DTYPE_real = DTYPE_real
+        self.image_dim = data_par["image_dim"]
+        self.num_coils = data_par["num_coils"]
+        self.DTYPE = data_par["DTYPE"]
+        self.DTYPE_real = data_par["DTYPE_real"]
 
-        self.incor = par["in_scale"].astype(DTYPE)
+        self.do_incor = data_par["do_intensity_scale"]
+        self.incor = data_par["in_scale"].astype(self.DTYPE)
+        
+        self.maxit=optimizer_par["max_iter"]
+        self.lambd=optimizer_par["lambda"]
+        self.tol=optimizer_par["tolerance"]
 
         self.fval_min = 0
         self.fval = 0
@@ -118,7 +120,7 @@ class CGReco:
         assert self.operator is not None, \
             "Please set an operator with the set_operation method"
 
-        return self.operator_rhs(self.operator.forward(inp[None, ...]))
+        return self.operator_rhs(self.operator.forward(inp))
 
     def operator_rhs(self, inp):
         """
@@ -143,18 +145,18 @@ class CGReco:
 
     def kspace_filter(self, x):
         print("Performing k-space filtering")
-        beta = 100
-        kc = 25
-        kpoints = np.arange(-np.floor(self.operator.num_reads/2),
+        kpoints = (np.arange(-np.floor(self.operator.num_reads/2),
                             np.ceil(self.operator.num_reads/2))
-        filter_vec = 1/2+1/np.pi*np.arctan(beta*(kc - np.abs(kpoints)/kc))
-        filter_kspace = np.outer(filter_vec, filter_vec)
+                   )/self.operator.num_reads
+        xx, yy = np.meshgrid(kpoints,kpoints)
+        gridmask = np.sqrt(xx**2+yy**2)
+        gridmask[np.abs(gridmask)>0.5] = 1
+        gridmask[gridmask<1] = 0
+        gridmask = ~gridmask.astype(bool)
         gridcenter = self.operator.num_reads / 2
         for j in range(x.shape[0]):
             tmp = np.zeros(
                 (
-                    self.num_scans,
-                    self.num_slc,
                     self.operator.num_reads,
                     self.operator.num_reads),
                 dtype=self.operator.DTYPE
@@ -162,23 +164,23 @@ class CGReco:
 
             tmp[
                 ...,
-                int(gridcenter-self.dimY/2):
-                    int(gridcenter+self.dimY/2),
-                int(gridcenter-self.dimX/2):
-                    int(gridcenter+self.dimX/2)
+                int(gridcenter-self.image_dim/2):
+                    int(gridcenter+self.image_dim/2),
+                int(gridcenter-self.image_dim/2):
+                    int(gridcenter+self.image_dim/2)
                 ] = x[j]
 
             tmp = np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(
                 np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(
                         tmp, (-2, -1)), norm='ortho'),
-                        (-2, -1))*filter_kspace, (-2, -1)),
+                        (-2, -1))*gridmask, (-2, -1)),
                         norm='ortho'), (-2, -1))
             x[j] = tmp[
                 ...,
-                int(gridcenter-self.dimY/2):
-                    int(gridcenter+self.dimY/2),
-                int(gridcenter-self.dimX/2):
-                    int(gridcenter+self.dimX/2)
+                int(gridcenter-self.image_dim/2):
+                    int(gridcenter+self.image_dim/2),
+                int(gridcenter-self.image_dim/2):
+                    int(gridcenter+self.image_dim/2)
                 ]
         return x
 
@@ -187,7 +189,7 @@ class CGReco:
 #   Call inner optimization ###################################################
 #   output: optimal value of x ################################################
 ###############################################################################
-    def optimize(self, data, guess=None, maxit=10, lambd=1e-8, tol=1e-5):
+    def optimize(self, data, guess=None):
         """
         Perform CG minimization.
 
@@ -224,29 +226,28 @@ class CGReco:
         if guess is None:
             guess = np.zeros(
               (
-                  maxit+1, 1, 1,
-                  self.num_slc,
-                  self.dimY,
-                  self.dimX
+                  self.maxit+1,
+                  self.image_dim,
+                  self.image_dim
                   ),
               dtype=self.DTYPE
               )
         start = time.time()
         result = self._cg_solve(
             x=guess,
-            # TODO again. Make sure that this is not needed here.
-            data=data[None, :, None, ...],
-            iters=maxit,
-            lambd=lambd,
-            tol=tol
+            data=data,
+            iters=self.maxit,
+            lambd=self.lambd,
+            tol=self.tol
             )
         result[~np.isfinite(result)] = 0
         end = time.time()-start
         print("-"*80)
         print("Elapsed time: %f seconds" % (end))
         print("-"*80)
-        print("done")
-        return self.kspace_filter(result*self.incor)
+        if self.do_incor:
+            result *= self.incor
+        return self.kspace_filter(result)
 
 ###############################################################################
 #   Conjugate Gradient optimization ###########################################
@@ -284,21 +285,15 @@ class CGReco:
         """
         b = np.zeros(
             (
-                self.num_scans,
-                1,
-                self.num_slc,
-                self.dimY,
-                self.dimX
+                self.image_dim,
+                self.image_dim
                 ),
             self.DTYPE
             )
         Ax = np.zeros(
             (
-                self.num_scans,
-                1,
-                self.num_slc,
-                self.dimY,
-                self.dimX
+                self.image_dim,
+                self.image_dim
                 ),
             self.DTYPE
             )

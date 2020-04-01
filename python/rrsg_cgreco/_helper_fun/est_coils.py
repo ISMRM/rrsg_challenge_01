@@ -24,14 +24,11 @@ limitations under the License.
 import numpy as np
 import sys
 from rrsg_cgreco._helper_fun import nlinvns
-from rrsg_cgreco._helper_fun import goldcomp
 from rrsg_cgreco import linop
 
 # Estimates sensitivities and complex image.
 # (see Martin Uecker: Image reconstruction by regularized nonlinear
 # inversion joint estimation of coil sensitivities and image content)
-DTYPE = np.complex64
-DTYPE_real = np.float32
 
 
 def estimate_coil_sensitivities(data, trajectory, par):
@@ -66,101 +63,65 @@ def estimate_coil_sensitivities(data, trajectory, par):
     nlinv_newton_steps = 6
     nlinv_real_constr = False
 
-    new_shape = (par["num_scans"] * par["num_proj"], par["num_reads"])
-    traj_coil = np.reshape(trajectory, new_shape)
-    dens_cor_coil = np.sqrt(
-        np.array(
-            goldcomp.get_golden_angle_dcf(
-                traj_coil
-                ),
-            dtype=DTYPE
-            )
-        )
+    par["Data"]["coils"] = np.zeros(
+        (par["Data"]["num_coils"], 
+         par["Data"]["image_dim"], 
+         par["Data"]["image_dim"]), 
+        dtype=par["Data"]["DTYPE"])
 
-    C_shape = (par["num_coils"], par["num_slc"], par["dimY"], par["dimX"])
-    par["coils"] = np.zeros(C_shape, dtype=DTYPE)
-    phase_map_shape = (par["num_slc"], par["dimY"], par["dimX"])
-    par["phase_map"] = np.zeros(phase_map_shape, dtype=DTYPE)
+    par["Data"]["phase_map"] = np.zeros(
+        (par["Data"]["image_dim"],
+         par["Data"]["image_dim"]), 
+        dtype=par["Data"]["DTYPE"])
 
-    par_coils = {}
-    par_coils["dens_cor"] = dens_cor_coil
-    par_coils["num_reads"] = par["num_reads"]
-    par_coils["num_scans"] = 1
-    par_coils["num_coils"] = par["num_coils"]
-    par_coils["num_slc"] = 1
-    par_coils["dimX"] = par["dimX"]
-    par_coils["dimY"] = par["dimY"]
-    par_coils["num_proj"] = par["num_proj"]
-    FFT = linop.NUFFT(par_coils, traj_coil[None, ...])
+    FFT = linop.NUFFT(data_par=par["Data"], 
+                      fft_par=par["FFT"],
+                      trajectory=trajectory)
 
-    combined_data = np.transpose(
-        data[None, :, None, ...], (1, 0, 2, 3, 4))
-    combined_data = (
-        np.reshape(
-            combined_data,
-            (
-                1,
-                par["num_coils"],
-                1,
-                par["num_scans"] * par["num_proj"],
-                par["num_reads"]
-                )
-            )
-        *
-        dens_cor_coil
-        )
-    combined_data = FFT.adjoint(combined_data)
+    combined_data = FFT.adjoint(data * par["FFT"]["dens_cor"])
     combined_data = np.fft.fft2(
         combined_data,
         norm='ortho')
 
-    for i in range(0, (par["num_slc"])):
-        sys.stdout.write(
-            "Computing coil sensitivity map of slice %i \r" %
-            (i)
-            )
-        sys.stdout.flush()
 
-        result = nlinvns.nlinvns(
-                    np.squeeze(combined_data[:, :, i, ...]),
-                    nlinv_newton_steps,
-                    True,
-                    nlinv_real_constr
-                    )
+    sys.stdout.write(
+        "Computing coil sensitivity map\n")
+    sys.stdout.flush()
 
-        par["coils"][:, i, :, :] = result[2:, -1, :, :]
-        sys.stdout.write(
-            "slice %i done \r"
-            % (i)
-            )
-        sys.stdout.flush()
-        if not nlinv_real_constr:
-            par["phase_map"][i, :, :] = np.exp(
-                1j
-                *
-                np.angle(
-                    result[0, -1, :, :]
-                    )
+    result = nlinvns.nlinvns(
+                np.squeeze(combined_data),
+                nlinv_newton_steps,
+                True,
+                nlinv_real_constr
                 )
 
-            # standardize coil sensitivity propar["file"]s
+    par["Data"]["coils"] = result[2:, -1]
+
+    if not nlinv_real_constr:
+        par["phase_map"] = np.exp(
+            1j
+            *
+            np.angle(
+                result[0, -1]
+                )
+            )
+
+    # standardize coil sensitivity profiles
     sumSqrC = np.sqrt(
         np.sum(
-            (par["coils"]
+            (par["Data"]["coils"]
              *
              np.conj(
-                 par["coils"]
+                 par["Data"]["coils"]
                  )
              ),
             0
             )
-        )  # 4, 9, 128, 128
-    par["in_scale"] = sumSqrC
-    if par["num_coils"] == 1:
-        par["coils"] = sumSqrC
+        )
+    par["Data"]["in_scale"] = sumSqrC
+    if par["Data"]["num_coils"] == 1:
+        par["Data"]["coils"] = sumSqrC
     else:
-        par["coils"] = (
-            par["coils"]
-            /
-            np.tile(sumSqrC, (par["num_coils"], 1, 1, 1))
-            )
+        par["Data"]["coils"] = (
+            par["Data"]["coils"] / sumSqrC)
+            

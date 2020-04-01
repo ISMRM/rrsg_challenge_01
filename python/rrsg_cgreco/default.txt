@@ -1,0 +1,15 @@
+[Data]
+precission = single
+overgridfactor = 1.706
+do_intensity_scale = 1
+do_density_correction = 1
+data_type = radial
+
+[FFT]
+kernelwidth = 5
+kernellength = 5000
+
+[Optimizer]
+tolerance = 0
+lambda = 0
+max_iter = 10

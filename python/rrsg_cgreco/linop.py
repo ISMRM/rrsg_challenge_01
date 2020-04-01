@@ -7,6 +7,7 @@ import numpy as np
 from rrsg_cgreco._helper_fun.calckbkernel import calculate_keiser_bessel_kernel
 from abc import ABC, abstractmethod
 import itertools
+import scipy.sparse
 
 
 class Operator(ABC):
@@ -39,7 +40,7 @@ class Operator(ABC):
             The real value precision. Defaults to float32
     """
 
-    def __init__(self, par, DTYPE=np.complex64, DTYPE_real=np.float32):
+    def __init__(self, par):
         """
         Operator base constructor.
 
@@ -57,15 +58,12 @@ class Operator(ABC):
             DTYPE_real (numpy.type):
                 The real value precision. Defaults to float32
         """
-        self.num_slc = par["num_slc"]
-        self.num_scans = par["num_scans"]
-        self.dimX = par["dimX"]
-        self.dimY = par["dimY"]
+        self.image_dim = par["image_dim"]
         self.num_reads = par["num_reads"]
         self.num_coils = par["num_coils"]
         self.num_proj = par["num_proj"]
-        self.DTYPE = DTYPE
-        self.DTYPE_real = DTYPE_real
+        self.DTYPE = par["DTYPE"]
+        self.DTYPE_real = par["DTYPE_real"]
 
     @abstractmethod
     def forward(self, inp):
@@ -153,13 +151,10 @@ class NUFFT(Operator):
 
     def __init__(
             self,
-            par,
+            data_par,
+            fft_par,
             trajectory,
-            kwidth=5,
             fft_dim=(-2, -1),
-            klength=2000,
-            DTYPE=np.complex64,
-            DTYPE_real=np.float32
             ):
         """
         NUFFT object constructor.
@@ -189,25 +184,37 @@ class NUFFT(Operator):
             DTYPE_real (Numpy.Type):
                 The real precision type. Currently float32 is used.
         """
-        super().__init__(par, DTYPE, DTYPE_real)
-        self.overgridfactor = par["num_reads"] / par["dimX"]
+        super().__init__(data_par)
+        
+        self.overgridfactor = data_par["overgridfactor"]
 
         (self.kerneltable, kerneltable_FT, u) = calculate_keiser_bessel_kernel(
-            kwidth,
+            fft_par["kernelwidth"],
             self.overgridfactor,
-            par["num_reads"],
-            klength)
+            data_par["num_reads"],
+            fft_par["kernellength"])
 
-        deapodization = 1 / kerneltable_FT.astype(DTYPE_real)
+        deapodization = 1 / kerneltable_FT.astype(data_par["DTYPE_real"])
         self.deapodization = np.outer(deapodization, deapodization)
 
-        self.dens_comp = par["dens_cor"]
+        if "dens_cor" in fft_par.keys():
+            self.dens_comp = fft_par["dens_cor"]        
+        else:
+            self.dens_comp = np.ones(
+                trajectory.shape[:-1],
+                dtype=data_par["DTYPE_real"]
+                )
         self.trajectory = trajectory
 
         self.n_kernel_points = self.kerneltable.size
-        self.grid_size = par["num_reads"]
-        self.kwidth = (kwidth / 2) / self.grid_size
+        self.grid_size = data_par["num_reads"]
+        self.kwidth = (fft_par["kernelwidth"] / 2) / self.grid_size
         self.fft_dim = fft_dim
+        if "gridding_matrix" in fft_par.keys():
+            self.gridding_mat = fft_par["gridding_matrix"]
+        else:
+            self.gridding_mat = self._generate_gridding_matrix()
+        self.gridding_mat_adj = self.gridding_mat.transpose()
 
     def adjoint(self, inp):
         """
@@ -224,14 +231,23 @@ class NUFFT(Operator):
         Returns:
 
         """
+        # Perform density compensation
+        denscor_inp = inp*self.dens_comp
         # Grid k-space
-        ogkspace = self._grid_lut(inp)
+        ogkspace = np.zeros(
+            (self.num_coils, self.grid_size, self.grid_size), 
+            dtype=self.DTYPE)
+        for nc in range(self.num_coils):
+            ogkspace[nc] = np.reshape(
+                self.gridding_mat_adj.dot(denscor_inp[nc].flatten()), 
+                (self.grid_size,self.grid_size)
+                )
 
         # FFT
         ogkspace = np.fft.ifftshift(ogkspace, axes=self.fft_dim)
         ogkspace = np.fft.ifft2(ogkspace, norm='ortho')
         ogkspace = np.fft.ifftshift(ogkspace, axes=self.fft_dim)
-
+        # Deapodization and Scaling
         return self._deapo_adj(ogkspace)
 
     def forward(self, inp):
@@ -256,17 +272,24 @@ class NUFFT(Operator):
         ogkspace = np.fft.fftshift(ogkspace, axes=(-2, -1))
 
         # Resample on Spoke
-        return self._invgrid_lut(ogkspace)
+        kspace = np.zeros((self.num_coils, self.num_proj, self.num_reads), dtype=self.DTYPE)
+        for nc in range(self.num_coils):
+            kspace[nc] = np.reshape(
+                self.gridding_mat.dot(ogkspace[nc].flatten()), 
+                (self.num_proj,self.num_reads)
+                )
+        # Perform density compensation
+        return kspace*self.dens_comp
 
     def _deapo_adj(self, inp):
         gridcenter = self.grid_size / 2
 
         return inp[
             ...,
-            int(gridcenter-self.dimY/2):
-                int(gridcenter+self.dimY/2),
-            int(gridcenter-self.dimX/2):
-                int(gridcenter+self.dimX/2)
+            int(gridcenter-self.image_dim/2):
+                int(gridcenter+self.image_dim/2),
+            int(gridcenter-self.image_dim/2):
+                int(gridcenter+self.image_dim/2)
             ] * self.deapodization
 
     def _deapo_fwd(self, inp):
@@ -274,9 +297,7 @@ class NUFFT(Operator):
 
         out = np.zeros(
             (
-                self.num_scans,
                 self.num_coils,
-                self.num_slc,
                 self.grid_size,
                 self.grid_size),
             dtype=self.DTYPE
@@ -284,10 +305,10 @@ class NUFFT(Operator):
 
         out[
             ...,
-            int(gridcenter-self.dimY/2):
-                int(gridcenter+self.dimY/2),
-            int(gridcenter-self.dimX/2):
-                int(gridcenter+self.dimX/2)
+            int(gridcenter-self.image_dim/2):
+                int(gridcenter+self.image_dim/2),
+            int(gridcenter-self.image_dim/2):
+                int(gridcenter+self.image_dim/2)
             ] = inp * self.deapodization
         return out
 
@@ -296,9 +317,7 @@ class NUFFT(Operator):
 
         sg = np.zeros(
             (
-                self.num_scans,
                 self.num_coils,
-                self.num_slc,
                 self.grid_size,
                 self.grid_size
                 ),
@@ -307,8 +326,7 @@ class NUFFT(Operator):
         grid_point_mapping = []  # Here for demonstration purposes.
 
         kdat = s * self.dens_comp
-        for iscan, iproj, iread in itertools.product(
-                range(self.num_scans),
+        for iproj, iread in itertools.product(
                 range(self.num_proj),
                 range(self.num_reads)
                 ):
@@ -316,8 +334,8 @@ class NUFFT(Operator):
             temp_mapping = []  # Here for demonstration purposes.
             temp_mapping.append((iread, iproj))
 
-            kx = self.trajectory[iscan, iproj, iread].imag
-            ky = self.trajectory[iscan, iproj, iread].real
+            kx = self.trajectory[iproj, iread, 1]
+            ky = self.trajectory[iproj, iread, 0]
 
             ixmin = int((kx - self.kwidth) * self.grid_size + gridcenter)
             ixmax = int((kx + self.kwidth) * self.grid_size + gridcenter) + 1
@@ -362,10 +380,8 @@ class NUFFT(Operator):
 
                         temp_mapping.append((indx, indy))  # Here for demonstration purposes
 
-                        sg[iscan, :, :, indy, indx] += (
+                        sg[:, indy, indx] += (
                             kern * kdat[
-                                iscan,
-                                :,
                                 :,
                                 iproj,
                                 iread
@@ -384,23 +400,20 @@ class NUFFT(Operator):
 
         s = np.zeros(
             (
-                self.num_scans,
                 self.num_coils,
-                self.num_slc,
                 self.num_proj,
                 self.num_reads
                 ),
             dtype=self.DTYPE
             )
 
-        for iscan, iproj, ismpl in itertools.product(
-                range(self.num_scans),
+        for iproj, ismpl in itertools.product(
                 range(self.num_proj),
                 range(self.num_reads)
                 ):
 
-            kx = self.trajectory[iscan, iproj, ismpl].imag
-            ky = self.trajectory[iscan, iproj, ismpl].real
+            kx = self.trajectory[iproj, ismpl, 1]
+            ky = self.trajectory[iproj, ismpl, 0]
 
             ixmin = int((kx - self.kwidth) * self.grid_size + gridcenter)
             ixmax = int((kx + self.kwidth) * self.grid_size + gridcenter) + 1
@@ -442,10 +455,69 @@ class NUFFT(Operator):
                             indy -= self.grid_size
                             indx = self.grid_size - indx
 
-                        s[iscan, :, :, iproj, ismpl] += \
-                            kern*sg[iscan, :, :, indy, indx]
+                        s[:, iproj, ismpl] += \
+                            kern*sg[:, indy, indx]
         return s * self.dens_comp
 
+    def _generate_gridding_matrix(self):
+            gridcenter = self.grid_size / 2
+    
+            rowind = []
+            colind = []
+            value = []
+            for iproj, ismpl in itertools.product(
+                    range(self.num_proj),
+                    range(self.num_reads)
+                    ):
+    
+                kx = self.trajectory[iproj, ismpl, 1]
+                ky = self.trajectory[iproj, ismpl, 0]
+    
+                ixmin = int((kx - self.kwidth) * self.grid_size + gridcenter)
+                ixmax = int((kx + self.kwidth) * self.grid_size + gridcenter) + 1
+                iymin = int((ky - self.kwidth) * self.grid_size + gridcenter)
+                iymax = int((ky + self.kwidth) * self.grid_size + gridcenter) + 1
+
+                for gcount1 in np.arange(ixmin, ixmax+1):
+                    dkx = (gcount1 - gridcenter) / self.grid_size - kx
+                    for gcount2 in np.arange(iymin, iymax+1):
+                        dky = (gcount2 - gridcenter) / self.grid_size - ky
+                        dk = np.sqrt(dkx ** 2 + dky ** 2)
+                        if dk < self.kwidth:
+                            fracind = dk / self.kwidth * (self.n_kernel_points - 1)
+                            kernelind = int(fracind)
+                            fracdk = fracind - kernelind
+                            kern = (
+                                self.kerneltable[kernelind] * (1 - fracdk) +
+                                self.kerneltable[kernelind + 1] * fracdk
+                                )
+                            indx = gcount1
+                            indy = gcount2
+    
+                            if gcount1 < 0:
+                                indx += self.grid_size
+                                indy = self.grid_size - indy
+                            if gcount1 >= self.grid_size:
+                                indx -= self.grid_size
+                                indy = self.grid_size - indy
+                            if gcount2 < 0:
+                                indy += self.grid_size
+                                indx = self.grid_size - indx
+                            if gcount2 >= self.grid_size:
+                                indy -= self.grid_size
+                                indx = self.grid_size - indx
+                                
+                            rowind.append(iproj*self.num_reads+ismpl)
+                            colind.append(indy*self.grid_size+indx)
+                            value.append(kern)
+
+          
+            gridmat = scipy.sparse.coo_matrix(
+                (value, (rowind, colind)), 
+                shape=(self.num_proj*self.num_reads,
+                       self.grid_size**2))
+            gridmat = gridmat.tocsc()
+            return gridmat               
 
 class MRIImagingModel(Operator):
     """
@@ -467,9 +539,7 @@ class MRIImagingModel(Operator):
     def __init__(
             self,
             par,
-            trajectory,
-            DTYPE=np.complex64,
-            DTYPE_real=np.float32
+            trajectory
             ):
         """
         NUFFT object constructor.
@@ -491,16 +561,15 @@ class MRIImagingModel(Operator):
             DTYPE_real (Numpy.Type):
                 The real precission type. Currently float32 is used.
         """
-        super().__init__(par, DTYPE, DTYPE_real)
+        super().__init__(par["Data"])
 
         self.NUFFT = NUFFT(
-            par,
-            trajectory,
-            DTYPE=DTYPE,
-            DTYPE_real=DTYPE_real
+            data_par=par["Data"],
+            fft_par=par["FFT"],
+            trajectory=trajectory
             )
-        self.coils = par["coils"]
-        self.conj_coils = np.conj(par["coils"])
+        self.coils = par["Data"]["coils"]
+        self.conj_coils = np.conj(self.coils)
 
     def adjoint(self, inp):
         """
@@ -517,7 +586,7 @@ class MRIImagingModel(Operator):
           s (Numpy.Array):
             The non-uniformly gridded k-space
         """
-        return np.sum(self.NUFFT.adjoint(inp) * self.conj_coils, 1)
+        return np.sum(self.NUFFT.adjoint(inp) * self.conj_coils, 0)
 
     def forward(self, inp):
         """

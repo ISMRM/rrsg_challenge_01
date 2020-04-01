@@ -12,61 +12,61 @@ except ImportError:
     import unittest
 import numpy as np
 import h5py
+import os
 from rrsg_cgreco import linop
-from rrsg_cgreco._helper_fun import goldcomp as goldcomp
+from rrsg_cgreco._helper_fun.density_compensation \
+    import get_density_from_gridding 
+
 
 DTYPE = np.complex128
 DTYPE_real = np.float64
 
 
 def setupPar(par):
-    par["num_scans"] = 1
-    par["num_coils"] = 5
-    par["num_slc"] = 1
-    par["dimX"] = 256
-    par["dimY"] = 256
-    par["num_proj"] = 34
-    par["num_reads"] = 512
-    file = h5py.File('./python/test/smalltest.h5')
+    par["Data"] = {}
+    par["Data"]["overgridfactor"] = 2
+    par["Data"]["DTYPE"] = DTYPE
+    par["Data"]["DTYPE_real"] = DTYPE_real
+    
+    par["FFT"] = {}
+    par["FFT"]["kernelwidth"] = 5
+    par["FFT"]["kernellength"] = 5000
 
-    par["traj"] = (
-        file['real_traj'][()].astype(DTYPE) + 1j *
-        file['imag_traj'][()].astype(DTYPE)
+    par["Data"]["num_coils"] = 5
+    par["Data"]["image_dim"] = 256
+    par["Data"]["num_proj"] = 34
+    par["Data"]["num_reads"] = 512
+    file = h5py.File(
+        '.'+os.sep+'python'+os.sep+'test'+os.sep+'smalltest.h5',
+        'r'
         )
 
-    par["coils"] = (
+    par["traj"] = np.array(
+        (file['real_traj'][0].astype(DTYPE_real),
+         file['imag_traj'][0].astype(DTYPE_real))
+        )
+    par["traj"] = np.transpose(par["traj"], (1,2,0))
+
+    par["Data"]["coils"] = (
         np.random.randn(
-            par["num_coils"],
-            par["num_slc"],
-            par["dimY"],
-            par["dimX"]
+            par["Data"]["num_coils"],
+            par["Data"]["image_dim"],
+            par["Data"]["image_dim"]
             ) + 1j *
         np.random.randn(
-            par["num_coils"],
-            par["num_slc"],
-            par["dimY"],
-            par["dimX"]
+            par["Data"]["num_coils"],
+            par["Data"]["image_dim"],
+            par["Data"]["image_dim"]
             )
         )
 
-    par["dens_cor"] = (
-        np.sqrt(
-            np.array(
-                goldcomp.get_golden_angle_dcf(
-                         par["traj"]
-                         ),
-                dtype=DTYPE_real
-                )
-            )
-        .astype(DTYPE_real)
-        )
-    par["dens_cor"] = np.require(
-        np.abs(
-            par["dens_cor"]
-            ),
-        DTYPE_real,
-        requirements='C'
-        )
+    FFT = linop.NUFFT(data_par=par["Data"], 
+                      fft_par=par["FFT"],
+                      trajectory=par["traj"])
+    par["FFT"]["gridding_matrix"] = FFT.gridding_mat
+    par["FFT"]["dens_cor"] = np.sqrt(get_density_from_gridding(
+        par["Data"], 
+        par["FFT"]["gridding_matrix"]))
 
 
 class tmpArgs():
@@ -84,44 +84,35 @@ class OperatorKspaceRadial(unittest.TestCase):
         setupPar(par)
 
         self.op = linop.NUFFT(
-            par,
-            par["traj"],
-            DTYPE=DTYPE,
-            DTYPE_real=DTYPE_real
+            par["Data"],
+            par["FFT"],
+            par["traj"]
             )
 
         self.opinfwd = (
             np.random.randn(
-                par["num_scans"],
-                par["num_coils"],
-                par["num_slc"],
-                par["dimY"],
-                par["dimX"]
+                par["Data"]["num_coils"],
+                par["Data"]["image_dim"],
+                par["Data"]["image_dim"]
                 )
             + 1j *
             np.random.randn(
-                par["num_scans"],
-                par["num_coils"],
-                par["num_slc"],
-                par["dimY"],
-                par["dimX"]
+                par["Data"]["num_coils"],
+                par["Data"]["image_dim"],
+                par["Data"]["image_dim"]
                 )
             )
         self.opinadj = (
             np.random.randn(
-                par["num_scans"],
-                par["num_coils"],
-                par["num_slc"],
-                par["num_proj"],
-                par["num_reads"]
+                par["Data"]["num_coils"],
+                par["Data"]["num_proj"],
+                par["Data"]["num_reads"]
                 )
             + 1j *
             np.random.randn(
-                par["num_scans"],
-                par["num_coils"],
-                par["num_slc"],
-                par["num_proj"],
-                par["num_reads"]
+                par["Data"]["num_coils"],
+                par["Data"]["num_proj"],
+                par["Data"]["num_reads"]
                 )
             )
 
@@ -158,40 +149,31 @@ class OperatorMRIRadial(unittest.TestCase):
 
         self.op = linop.MRIImagingModel(
             par,
-            par["traj"],
-            DTYPE=DTYPE,
-            DTYPE_real=DTYPE_real)
+            par["traj"]
+            )
 
         self.opinfwd = (
             np.random.randn(
-                par["num_scans"],
-                par["num_slc"],
-                par["dimY"],
-                par["dimX"]
+                par["Data"]["image_dim"],
+                par["Data"]["image_dim"]
                 )
             + 1j *
             np.random.randn(
-                par["num_scans"],
-                par["num_slc"],
-                par["dimY"],
-                par["dimX"]
+                par["Data"]["image_dim"],
+                par["Data"]["image_dim"]
                 )
             )
         self.opinadj = (
             np.random.randn(
-                par["num_scans"],
-                par["num_coils"],
-                par["num_slc"],
-                par["num_proj"],
-                par["num_reads"]
+                par["Data"]["num_coils"],
+                par["Data"]["num_proj"],
+                par["Data"]["num_reads"]
                 )
             + 1j *
             np.random.randn(
-                par["num_scans"],
-                par["num_coils"],
-                par["num_slc"],
-                par["num_proj"],
-                par["num_reads"]
+                par["Data"]["num_coils"],
+                par["Data"]["num_proj"],
+                par["Data"]["num_reads"]
                 )
             )
 
