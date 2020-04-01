@@ -268,8 +268,6 @@ def setup_parameter_dict(
                         parameter[sectionkey][valuekey] = config.get(
                             sectionkey, 
                             valuekey)
-    import ipdb
-    ipdb.set_trace()
     if parameter["Data"]["precission"].lower() == "single":
         parameter["Data"]["DTYPE"] = np.complex64
         parameter["Data"]["DTYPE_real"] = np.float32
