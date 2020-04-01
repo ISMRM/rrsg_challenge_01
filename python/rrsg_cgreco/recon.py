@@ -74,7 +74,7 @@ def _get_args(
              'If not specified, use default parameters.'
              )
     parser.add_argument(
-        '--pathtofile', default=pathtofile, dest='pathtofile',
+        '--datafile', default=pathtofile, dest='pathtofile',
         help='Path to the h5 data file.'
         )
     parser.add_argument(
@@ -88,7 +88,7 @@ def _get_args(
 
 def run(
       configfile='default',
-      pathtofile='rawdata_brain_radial_96proj_12ch.h5',
+      datafile='rawdata_brain_radial_96proj_12ch.h5',
       undesampling_factor=1,
       ):
     """
@@ -122,7 +122,7 @@ def run(
     """
     args = _get_args(
         configfile,
-        pathtofile,
+        datafile,
         undesampling_factor
         )
     _run_reco(args)
@@ -237,7 +237,11 @@ def setup_parameter_dict(
     # Create empty dict
     parameter = {}
     config = configparser.ConfigParser()
-    config.read(configfile+".txt")
+    if configfile.split('.')[-1] == "txt":
+        pass
+    else:
+        configfile = configfile+'.txt'
+    config.read(configfile)
     for sectionkey in config.sections():
         parameter[sectionkey] = {}
         for valuekey in config[sectionkey].keys():
@@ -409,7 +413,7 @@ if __name__ == '__main__':
              'If not specified, use default parameters.'
              )
     parser.add_argument(
-        '--data', default='rawdata_brain_radial_96proj_12ch.h5', 
+        '--datafile', default='rawdata_brain_radial_96proj_12ch.h5', 
         dest='pathtofile',
         help='Path to the .h5 data file.'
         )
