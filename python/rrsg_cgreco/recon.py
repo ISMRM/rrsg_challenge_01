@@ -401,7 +401,7 @@ def _run_reco(args):
         data=kspace_data * parameter["FFT"]["dens_cor"]
         )
     # Store results
-    save_to_file(recon_result, args)
+    save_to_file(recon_result, parameter["Data"], args)
 
 
 if __name__ == '__main__':
