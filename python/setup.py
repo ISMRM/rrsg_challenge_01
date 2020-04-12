@@ -14,7 +14,9 @@ setup(name='rrsg_cgreco',
         'numpy',
         'h5py',
         'mako',
-        'matplotlib'],
+        'matplotlib'.
+	'pyfftw',
+	'scipy'],
       entry_points={
         'console_scripts': ['rrsg_cgreco = rrsg_cgreco.recon:run'],
         },
