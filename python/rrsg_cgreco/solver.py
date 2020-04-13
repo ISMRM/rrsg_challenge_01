@@ -232,7 +232,7 @@ class CGReco:
                   ),
               dtype=self.DTYPE
               )
-        start = time.time()
+        start = time.perf_counter()
         result = self._cg_solve(
             x=guess,
             data=data,
@@ -241,7 +241,7 @@ class CGReco:
             tol=self.tol
             )
         result[~np.isfinite(result)] = 0
-        end = time.time()-start
+        end = time.perf_counter()-start
         print("-"*80)
         print("Elapsed time: %f seconds" % (end))
         print("-"*80)
