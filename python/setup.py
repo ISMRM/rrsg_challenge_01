@@ -14,7 +14,7 @@ setup(name='rrsg_cgreco',
         'numpy',
         'h5py',
         'mako',
-        'matplotlib'.
+        'matplotlib',
 	'pyfftw',
 	'scipy'],
       entry_points={

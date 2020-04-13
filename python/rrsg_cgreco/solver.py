@@ -65,9 +65,9 @@ class CGReco:
                 sampling pos (N) and read outs (NProj) and the
                 complex coil sensitivities (C).
             DTYPE (Numpy.Type):
-                The comlex precission type. Currently complex64 is used.
+                The comlex precision type. Currently complex64 is used.
             DTYPE_real (Numpy.Type):
-                The real precission type. Currently float32 is used.
+                The real  type. Currently float32 is used.
         """
         self.image_dim = data_par["image_dim"]
         self.num_coils = data_par["num_coils"]
@@ -247,7 +247,7 @@ class CGReco:
         print("-"*80)
         if self.do_incor:
             result *= self.incor
-        return self.kspace_filter(result)
+        return (self.kspace_filter(result), self.res)
 
 ###############################################################################
 #   Conjugate Gradient optimization ###########################################

@@ -37,9 +37,9 @@ DTYPE_real = np.float32
 
 
 def _get_args(
-      configfile='default',
-      pathtofile='rawdata_brain_radial_96proj_12ch.h5',
-      undesampling_factor=1
+      configfile='.'+os.sep+'python'+os.sep+'default', 
+      pathtofile='.'+os.sep+'data'+os.sep+'rawdata_brain_radial_96proj_12ch.h5',
+      undersampling_factor=1
       ):
     """
     Parse command line arguments.
@@ -58,8 +58,8 @@ def _get_args(
         pathtofile (string):
             Full qualified path to the h5 data file.
 
-        undesampling_factor (int):
-            Desired undesampling compared to the number of
+        undersampling_factor (int):
+            Desired undersampling compared to the number of
             spokes provided in data.
             E.g. 1 uses all available spokes 2 every 2nd.
 
@@ -78,18 +78,18 @@ def _get_args(
         help='Path to the h5 data file.'
         )
     parser.add_argument(
-        '--acc', default=undesampling_factor, type=int, 
-        dest='undesampling_factor',
-        help='Desired undesampling factor.'
+        '--acc', default=undersampling_factor, type=int, 
+        dest='undersampling_factor',
+        help='Desired undersampling factor.'
         )
     args = parser.parse_args()
     return args
 
 
 def run(
-      configfile='default',
-      datafile='rawdata_brain_radial_96proj_12ch.h5',
-      undesampling_factor=1,
+      configfile='.'+os.sep+'python'+os.sep+'default', 
+      datafile='.'+os.sep+'data'+os.sep+'rawdata_brain_radial_96proj_12ch.h5',
+      undersampling_factor=1,
       ):
     """
     Run the CG reco of radial data.
@@ -111,7 +111,7 @@ def run(
         data (string):
             Full qualified path to the h5 data file.
 
-        undesampling_factor (int):
+        undersampling_factor (int):
              Desired acceleration compared to the number of
              spokes provided in data.
              E.g. 1 uses all available spokes 2 every 2nd.
@@ -123,14 +123,14 @@ def run(
     args = _get_args(
         configfile,
         datafile,
-        undesampling_factor
+        undersampling_factor
         )
     _run_reco(args)
 
 
 def read_data(
       pathtofile,
-      undesampling_factor,
+      undersampling_factor,
       data_rawdata_key='rawdata',
       data_trajectory_key='trajectory',
       noise_key='noise'
@@ -149,7 +149,7 @@ def read_data(
     ----
         path (string):
             Full qualified path to the .h5 data file.
-        undesampling_factor (int):
+        undersampling_factor (int):
             Desired acceleration compared to the number of
             spokes provided in data.
             E.g. 1 uses all available spokes 2 every 2nd.
@@ -172,13 +172,13 @@ def read_data(
     name = os.path.normpath(pathtofile)
     with h5py.File(name, 'r') as h5_dataset:
         if "heart" in name:
-            if undesampling_factor == 2:
+            if undersampling_factor == 2:
                 trajectory = h5_dataset[data_trajectory_key][:, :, :33]
                 rawdata = h5_dataset[data_rawdata_key][:, :, :33, :]
-            elif undesampling_factor == 3:
+            elif undersampling_factor == 3:
                 trajectory = h5_dataset[data_trajectory_key][:, :, :22]
                 rawdata = h5_dataset[data_rawdata_key][:, :, :22, :]
-            elif undesampling_factor == 4:
+            elif undersampling_factor == 4:
                 trajectory = h5_dataset[data_trajectory_key][:, :, :11]
                 rawdata = h5_dataset[data_rawdata_key][:, :, :11, :]
             else:
@@ -186,9 +186,9 @@ def read_data(
                 rawdata = h5_dataset[data_rawdata_key][...]
         else:
             trajectory = h5_dataset[data_trajectory_key][
-                :, :, ::undesampling_factor]
+                :, :, ::undersampling_factor]
             rawdata = h5_dataset[data_rawdata_key][
-                :, :, ::undesampling_factor, :]
+                :, :, ::undersampling_factor, :]
         if noise_key in h5_dataset.keys():
             noise_scan = h5_dataset[noise_key][()]
         else:
@@ -268,14 +268,14 @@ def setup_parameter_dict(
                         parameter[sectionkey][valuekey] = config.get(
                             sectionkey, 
                             valuekey)
-    if parameter["Data"]["precission"].lower() == "single":
+    if parameter["Data"]["precision"].lower() == "single":
         parameter["Data"]["DTYPE"] = np.complex64
         parameter["Data"]["DTYPE_real"] = np.float32
-    elif parameter["Data"]["precission"].lower() == "double":
+    elif parameter["Data"]["precision"].lower() == "double":
         parameter["Data"]["DTYPE"] = np.complex128
         parameter["Data"]["DTYPE_real"] = np.float64    
     else:
-        raise ValueError("Precission needs to be set to single or double.")
+        raise ValueError("precision needs to be set to single or double.")
     
     [n_ch, n_spokes, num_reads] = rawdata.shape
 
@@ -308,6 +308,8 @@ def setup_parameter_dict(
 
 def save_to_file(
       result,
+      residuals,
+      single_coil_images,
       data_par,
       args
       ):
@@ -323,19 +325,19 @@ def save_to_file(
     """
     outdir = ""
     if "heart" in args.pathtofile:
-        outdir += "/heart"
+        outdir += os.sep+'heart'
     elif "brain" in args.pathtofile:
-        outdir += "/brain"
-    if not os.path.exists('./output'):
+        outdir += os.sep+'brain'
+    if not os.path.exists('.'+os.sep+'output'+os.sep+'python'):
         os.makedirs('output')
-    if not os.path.exists('./output' + outdir):
-        os.makedirs("./output" + outdir)
+    if not os.path.exists('.'+os.sep+'output'+os.sep+'python' + outdir):
+        os.makedirs('.'+os.sep+'output'+os.sep+'python' + outdir)
     cwd = os.getcwd()
-    os.chdir("./output" + outdir)
+    os.chdir('.'+os.sep+'output'+os.sep+'python' + outdir)
     f = h5py.File(
         "CG_reco_inscale_" + str(data_par["do_intensity_scale"]) + "_denscor_"
         + str(data_par["do_density_correction"]) + 
-        "_reduction_" + str(args.undesampling_factor)
+        "_reduction_" + str(args.undersampling_factor)
         + ".h5",
         "w"
         )
@@ -345,6 +347,13 @@ def save_to_file(
         dtype=DTYPE,
         data=result
         )
+    f.create_dataset(
+        "Coil_images",
+        single_coil_images.shape,
+        dtype=DTYPE,
+        data=single_coil_images
+        )
+    f.attrs["residuals"] = residuals
     f.flush()
     f.close()
     os.chdir(cwd)
@@ -370,7 +379,7 @@ def _run_reco(args):
     # Read input data
     kspace_data, trajectory, noise = read_data(
         pathtofile=args.pathtofile, 
-        undesampling_factor=args.undesampling_factor
+        undersampling_factor=args.undersampling_factor
         )
     # Setup parameters
     parameter = setup_parameter_dict(
@@ -397,27 +406,40 @@ def _run_reco(args):
     # Data needs to be multiplied with the sqrt of dense_cor to assure that
     # forward and adjoint application of the NUFFT is adjoint with each other.
     # dens_cor itself is saved in the par dict as the sqrt.
-    recon_result = cgs.optimize(
+    recon_result, residuals = cgs.optimize(
         data=kspace_data * parameter["FFT"]["dens_cor"]
         )
+    
+    
+    # Single Coil images after FFT
+    single_coil_images = cgs.operator.NUFFT.adjoint(
+        kspace_data * parameter["FFT"]["dens_cor"])
+    
     # Store results
-    save_to_file(recon_result, parameter["Data"], args)
+    save_to_file(recon_result, 
+                 residuals, 
+                 single_coil_images, 
+                 parameter["Data"], 
+                 args)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='CG Sense Reconstruction')
     parser.add_argument(
-        '--config', default='default', dest='configfile',
+        '--config', 
+        default='.'+os.sep+'python'+os.sep+'default', 
+        dest='configfile',
         help='Path to the config file to use. '
              'If not specified, use default parameters.'
              )
     parser.add_argument(
-        '--datafile', default='rawdata_brain_radial_96proj_12ch.h5', 
+        '--datafile', 
+        default='.'+os.sep+'data'+os.sep+'rawdata_brain_radial_96proj_12ch.h5', 
         dest='pathtofile',
         help='Path to the .h5 data file.'
         )
     parser.add_argument(
-        '--acc', default=1, type=int, dest='undesampling_factor',
+        '--acc', default=1, type=int, dest='undersampling_factor',
         help='Desired acceleration factor.'
         )
     args = parser.parse_args()

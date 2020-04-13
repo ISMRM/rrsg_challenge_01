@@ -557,9 +557,9 @@ class MRIImagingModel(Operator):
             trajectory (numpy.array):
                 Complex trajectory information for kx/ky points.
             DTYPE (Numpy.Type):
-                The comlex precission type. Currently complex64 is used.
+                The comlex precision type. Currently complex64 is used.
             DTYPE_real (Numpy.Type):
-                The real precission type. Currently float32 is used.
+                The real precision type. Currently float32 is used.
         """
         super().__init__(par["Data"])
 
