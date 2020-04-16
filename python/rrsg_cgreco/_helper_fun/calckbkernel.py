@@ -26,7 +26,7 @@ import numpy as np
 from rrsg_cgreco._helper_fun.kb import kaiser_bessel
 
 
-def calculate_keiser_bessel_kernel(kwidth, overgridfactor, G, klength=32, **kwargs):
+def calculate_keiser_bessel_kernel(kernelwidth, overgridfactor, G, kernellength=32, **kwargs):
     """
     Calculate the appropriate Kaiser-Bessel gridding kernel.
 
@@ -57,8 +57,8 @@ def calculate_keiser_bessel_kernel(kwidth, overgridfactor, G, klength=32, **kwar
             linspace from 0 to length of kernel in grid units
 
     """
-    if klength < 2:
-        klength = 2
+    if kernellength < 2:
+        kernellength = 2
         warnings.warn('Warning:  klength must be 2 or more. Default to 2.')
 
     a = overgridfactor
@@ -66,35 +66,35 @@ def calculate_keiser_bessel_kernel(kwidth, overgridfactor, G, klength=32, **kwar
     # From Beatty et al. -
     # Rapid Gridding Reconstruction With a Minimal Oversampling Ratio -
     # equation [5]
-    beta = np.pi * np.sqrt((kwidth / a) ** 2 * (a - 0.5) ** 2 - 0.8)
+    beta = np.pi * np.sqrt((kernelwidth / a) ** 2 * (a - 0.5) ** 2 - 0.8)
 
     # Kernel radii - grid samples.
     u = (
         np.linspace(
             0,
             np.floor(
-                klength * kwidth / 2
+                kernellength * kernelwidth / 2
                 ),
             int(
                 np.ceil(
-                    klength * kwidth / 2
+                    kernellength * kernelwidth / 2
                     )
                 )
             ) /
         (
             np.floor(
-                klength * kwidth / 2
+                kernellength * kernelwidth / 2
                 )
             )
-        * kwidth / 2 / G
+        * kernelwidth / 2 / G
         )
 
-    kern = kaiser_bessel(u, kwidth, beta, G)
+    kern = kaiser_bessel(u, kernelwidth, beta, G)
     kern = kern / kern[u == 0]  # Normalize.
 
     ft_y = np.flip(kern)
     ft_y = np.concatenate((ft_y[:-1], kern))
-    ft_y = np.pad(ft_y, int((G * klength - ft_y.size) / 2), 'constant')
+    ft_y = np.pad(ft_y, int((G * kernellength - ft_y.size) / 2), 'constant')
     ft_y = np.abs(
       np.fft.fftshift(
           np.fft.ifft(
@@ -108,7 +108,7 @@ def calculate_keiser_bessel_kernel(kwidth, overgridfactor, G, klength=32, **kwar
     x = np.linspace(-int(G/(2*a)), int(G/(2*a))-1, int(G/(a)))
 
     ft_y = ft_y[(ft_y.size / 2 - x).astype(int)]
-    h = np.sinc(x / (G * klength)) ** 2
+    h = np.sinc(x / (G * kernellength)) ** 2
 
     kern_ft = ft_y * h
     kern_ft = kern_ft / np.max(kern_ft)
@@ -125,10 +125,10 @@ if __name__ == "__main__":
         for G in range(2, 10):
             try:
                 a, b, c = calculate_keiser_bessel_kernel(
-                    kwidth=kwidth,
+                    kernelwidth=kwidth,
                     G=G,
                     overgridfactor=overgridfactor,
-                    klength=klength
+                    kernellength=klength
                     )
                 plt.plot(
                     a,

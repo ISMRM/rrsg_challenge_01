@@ -98,7 +98,7 @@ def estimate_coil_sensitivities(data, trajectory, par):
     par["Data"]["coils"] = result[2:, -1]
 
     if not nlinv_real_constr:
-        par["phase_map"] = np.exp(
+        par["Data"]["phase_map"] = np.exp(
             1j
             *
             np.angle(
