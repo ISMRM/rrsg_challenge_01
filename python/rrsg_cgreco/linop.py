@@ -58,8 +58,7 @@ class Operator(ABC):
                 np.complex64 and np.float32 respectively.
         """
         # Test whether the given dictionary contains the desired keys
-        necessary_keys = ['num_slc', 'num_scans', 'dimX', 'dimY',
-                          'num_coils', 'N', 'num_proj']
+        necessary_keys = ['image_dim', 'num_coils', 'num_reads', 'num_proj']
         necessary_test = [x in data_par for x in necessary_keys]
         if not all(necessary_test):
             false_index = [i for i, x in enumerate(necessary_test) if x == False]
