@@ -53,12 +53,13 @@ class Operator(ABC):
                 number of scans (num_scans), image dimensions (dimX, dimY),
                 number of coils (num_coils),
                 sampling pos (N) and read outs (num_proj).
-            DTYPE (numpy.type):
-                The complex value precision. Defaults to complex64
-            DTYPE_real (numpy.type):
-                The real value precision. Defaults to float32
+                (Optional) content of the par (dict) is the DTYPE and
+                DTYPE_real specification. The default value will be
+                np.complex64 and np.float32 respectively.
         """
-        necessary_keys = ['num_slc', 'num_scans', 'dimX', 'dimY', 'num_coils', 'N', 'num_proj']
+        # Test whether the given dictionary contains the desired keys
+        necessary_keys = ['num_slc', 'num_scans', 'dimX', 'dimY',
+                          'num_coils', 'N', 'num_proj']
         necessary_test = [x in par for x in necessary_keys]
         if not all(necessary_test):
             false_index = [i for i, x in enumerate(necessary_test) if x == False]
@@ -69,8 +70,8 @@ class Operator(ABC):
         self.num_reads = par["num_reads"]
         self.num_coils = par["num_coils"]
         self.num_proj = par["num_proj"]
-        self.DTYPE = par["DTYPE"]
-        self.DTYPE_real = par["DTYPE_real"]
+        self.DTYPE = par.get("DTYPE", np.complex64)
+        self.DTYPE_real = par.get("DTYPE_real", np.float32)
 
     @abstractmethod
     def forward(self, inp):
@@ -168,28 +169,26 @@ class NUFFT(Operator):
 
         Args
         ----
-            par (dict):
+            data_par (dict):
                 A python dict containing the necessary information to
                 setup the object. Needs to contain the number of slices
                 (num_slc), number of scans (num_scans),
                 image dimensions (dimX, dimY), number of coils (num_coils),
                 sampling pos (N) and read outs (num_proj).
+                (Optional) The dictionary can contain specification of
+                DTYPE and DTYPE_real.
+                overgridfactor..?? This is not necessary information?
+            fft_par (??):
+                ... kernelwidth..? kernellength..? ..
+                (Optional) gridding_matrix ? dens_cor..? .. Needs to check this content as well..?
+                The width of the sampling kernel for re-gridding of non-uniform kspace samples.
+
+                The length of the kernel lookup table which samples the continuous gridding kernel.
             trajectory (numpy.array):
-                Complex trajectory information for kx/ky points.
-                Expects a shape of (num_scans, num_proj, num_reads)
-            kwidth (int):
-                The width of the sampling kernel for re-gridding of non-uniform
-                kspace samples.
+                Trajectory information for kx/ky/kz points. Expects a shape of (num_scans, num_proj, 3)
             fft_dim (tuple):
                 A tuple containing the axes over which the Fourier Transform
                 is performed.
-            klength (int):
-                The length of the kernel lookup table which samples the
-                continuous gridding kernel.
-            DTYPE (Numpy.Type):
-                The complex precision type. Currently complex64 is used.
-            DTYPE_real (Numpy.Type):
-                The real precision type. Currently float32 is used.
         """
         super().__init__(data_par)
         
@@ -239,7 +238,7 @@ class NUFFT(Operator):
 
         """
         # Perform density compensation
-        denscor_inp = inp*self.dens_comp
+        denscor_inp = inp * self.dens_comp
         # Grid k-space
         ogkspace = np.zeros(
             (self.num_coils, self.grid_size, self.grid_size), 
@@ -247,7 +246,7 @@ class NUFFT(Operator):
         for nc in range(self.num_coils):
             ogkspace[nc] = np.reshape(
                 self.gridding_mat_adj.dot(denscor_inp[nc].flatten()), 
-                (self.grid_size,self.grid_size)
+                (self.grid_size, self.grid_size)
                 )
 
         # FFT
@@ -283,7 +282,7 @@ class NUFFT(Operator):
         for nc in range(self.num_coils):
             kspace[nc] = np.reshape(
                 self.gridding_mat.dot(ogkspace[nc].flatten()), 
-                (self.num_proj,self.num_reads)
+                (self.num_proj, self.num_reads)
                 )
         # Perform density compensation
         return kspace*self.dens_comp
@@ -526,6 +525,7 @@ class NUFFT(Operator):
             gridmat = gridmat.tocsc()
             return gridmat               
 
+
 class MRIImagingModel(Operator):
     """
     The MRI imaging model including Coils.
@@ -561,12 +561,11 @@ class MRIImagingModel(Operator):
                 number of coils (num_coils), sampling pos (num_reads)
                 and read outs (num_proj) and the complex coil sensitivities
                 (coils).
+                The above is just not true. The __init__ statement says so.
+                We use the keys 'Data' and 'FFT' here all of a sudden.
+                Previously par contained only the content of 'Data'. This is very confusing.
             trajectory (numpy.array):
-                Complex trajectory information for kx/ky points.
-            DTYPE (Numpy.Type):
-                The comlex precision type. Currently complex64 is used.
-            DTYPE_real (Numpy.Type):
-                The real precision type. Currently float32 is used.
+                Trajectory information for kx/ky/kz points.
         """
         super().__init__(par["Data"])
 
