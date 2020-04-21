@@ -22,13 +22,14 @@ limitations under the License.
 """
 import numpy as np
 
-def get_density_from_gridding(par_data, gridding_matrix):
+
+def get_density_from_gridding(data_par, gridding_matrix):
     """
     Density compensation based on the used trajectory.
 
     Args
     ----
-      par_data (dict):
+      data_par (dict):
          Dictionary holding data propierties
       gridding_matrix (sparse_matrix):
           Sparse matrix realizing the gridding via matrix-vector 
@@ -46,9 +47,10 @@ def get_density_from_gridding(par_data, gridding_matrix):
     density = gridding_matrix@density
     density = np.reshape(
         density, 
-        (par_data["num_proj"], par_data["num_reads"])
+        (data_par["num_proj"], data_par["num_reads"])
         )
-    return density.astype(par_data["DTYPE_real"])
+    return density.astype(data_par["DTYPE_real"])
+
 
 def get_golden_angle_dcf(k):
     """

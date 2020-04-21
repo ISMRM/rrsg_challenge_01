@@ -36,20 +36,20 @@ def calculate_keiser_bessel_kernel(kernelwidth, overgridfactor, G, kernellength=
 
     Args
     ----
-        kwidth (int):
+        kernelwidth (int):
             kernel width in grid samples.
         overgridfactor (float):
             over-gridding factor.
         G (int):
             gridsize of oversampled grid
-        klength (int):
+        kernellength (int):
             kernel look-up-table length.
 
     Returns
     -------
         kern:
-            kernel values for klength values of u,
-            uniformly spaced from 0 to kwidth/2.
+            kernel values for kernellength values of u,
+            uniformly spaced from 0 to kernelwidth/2.
         kern_ft:
             normalized Fourier transform of kernel used for deapodization
         kbu:
@@ -59,7 +59,7 @@ def calculate_keiser_bessel_kernel(kernelwidth, overgridfactor, G, kernellength=
     """
     if kernellength < 2:
         kernellength = 2
-        warnings.warn('Warning:  klength must be 2 or more. Default to 2.')
+        warnings.warn('Warning:  kernellength must be 2 or more. Default to 2.')
 
     a = overgridfactor
 
@@ -119,16 +119,16 @@ def calculate_keiser_bessel_kernel(kernelwidth, overgridfactor, G, kernellength=
 if __name__ == "__main__":
     # A simple example of what this function does..
     import matplotlib.pyplot as plt
-    klength = 50
-    kwidth = 1.5
+    kernellength = 50
+    kernelwidth = 1.5
     for overgridfactor in range(1, 10):
         for G in range(2, 10):
             try:
                 a, b, c = calculate_keiser_bessel_kernel(
-                    kernelwidth=kwidth,
+                    kernelwidth=kernelwidth,
                     G=G,
                     overgridfactor=overgridfactor,
-                    kernellength=klength
+                    kernellength=kernellength
                     )
                 plt.plot(
                     a,

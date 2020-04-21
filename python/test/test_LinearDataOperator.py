@@ -60,9 +60,7 @@ def setupPar(par):
             )
         )
 
-    FFT = linop.NUFFT(data_par=par["Data"], 
-                      fft_par=par["FFT"],
-                      trajectory=par["traj"])
+    FFT = linop.NUFFT(par=par, trajectory=par["traj"])
     par["FFT"]["gridding_matrix"] = FFT.gridding_mat
     par["FFT"]["dens_cor"] = np.sqrt(get_density_from_gridding(
         par["Data"], 
