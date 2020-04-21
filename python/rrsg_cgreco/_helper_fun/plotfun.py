@@ -64,7 +64,7 @@ def plot_sequence(image_list, **kwargs):
 
         if hasattr(temp_img, 'ndim') and hasattr(temp_img, 'shape') and hasattr(temp_img, 'reshape'):
             if temp_img.ndim == 4:
-                n_sub_col = temp_img.shape[0]
+                n_sub_col = int(temp_img.shape[0])
                 n_sub_row = temp_img.shape[1]
                 temp_img = temp_img.reshape((n_sub_col * n_sub_row, ) + temp_img.shape[2:])
             elif temp_img.ndim == 3:
@@ -114,14 +114,3 @@ def plot_sequence(image_list, **kwargs):
                 ax.set_axis_off()
 
     return f
-
-
-def plot_complex_arrows(x, xmin=(-0.5, 0.5), ymin=(-0.5, 0.5)):
-    fig, ax = plt.subplots()
-    ax.set_xlim(xmin)
-    ax.set_ylim(ymin)
-    U = X = np.real(x)
-    V = Y = np.imag(x)
-    C = np.angle(x)
-    ax.quiver(X, Y, U, V, C)
-    return fig, ax
