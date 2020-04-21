@@ -58,6 +58,13 @@ class Operator(ABC):
             DTYPE_real (numpy.type):
                 The real value precision. Defaults to float32
         """
+        necessary_keys = ['num_slc', 'num_scans', 'dimX', 'dimY', 'num_coils', 'N', 'num_proj']
+        necessary_test = [x in par for x in necessary_keys]
+        if not all(necessary_test):
+            false_index = [i for i, x in enumerate(necessary_test) if x == False]
+            missing_keys = [necessary_keys[i] for i in false_index]
+            raise ValueError('Missing keys ', missing_keys)
+
         self.image_dim = par["image_dim"]
         self.num_reads = par["num_reads"]
         self.num_coils = par["num_coils"]
