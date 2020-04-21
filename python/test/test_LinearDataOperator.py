@@ -82,8 +82,7 @@ class OperatorKspaceRadial(unittest.TestCase):
         setupPar(par)
 
         self.op = linop.NUFFT(
-            par["Data"],
-            par["FFT"],
+            par
             par["traj"]
             )
 
