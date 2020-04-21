@@ -51,14 +51,13 @@ def estimate_coil_sensitivities(data, trajectory, par):
           data (numpy.array):
               complex k-space data
           trajectory (numpy.array):
-              complex trajectory information
-          par:
-              par (dict):
-                  A python dict containing the necessary information to
-                  setup the object. Needs to contain the number of slices
-                  (num_slc), number of scans (num_scans),
-                  image dimensions (dimX, dimY), number of coils (num_coils),
-                  sampling pos (num_reads) and read outs (num_proj).
+              trajectory information
+          par (dict):
+              A python dict containing the necessary information to
+              setup the object. Needs to contain the number of slices
+              (num_slc), number of scans (num_scans),
+              image dimensions (dimX, dimY), number of coils (num_coils),
+              sampling pos (num_reads) and read outs (num_proj).
     """
     nlinv_newton_steps = 6
     nlinv_real_constr = False

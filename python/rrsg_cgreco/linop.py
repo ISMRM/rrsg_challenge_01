@@ -40,38 +40,38 @@ class Operator(ABC):
             The real value precision. Defaults to float32
     """
 
-    def __init__(self, par):
+    def __init__(self, data_par):
         """
         Operator base constructor.
 
         Args
         ----
-            par (dict):
+            data_par (dict):
                 A python dict containing the necessary information to
                 setup the object. Needs to contain the number of slices
                 (num_slc),
                 number of scans (num_scans), image dimensions (dimX, dimY),
                 number of coils (num_coils),
                 sampling pos (N) and read outs (num_proj).
-                (Optional) content of the par (dict) is the DTYPE and
+                (Optional) content of the data_par (dict) is the DTYPE and
                 DTYPE_real specification. The default value will be
                 np.complex64 and np.float32 respectively.
         """
         # Test whether the given dictionary contains the desired keys
         necessary_keys = ['num_slc', 'num_scans', 'dimX', 'dimY',
                           'num_coils', 'N', 'num_proj']
-        necessary_test = [x in par for x in necessary_keys]
+        necessary_test = [x in data_par for x in necessary_keys]
         if not all(necessary_test):
             false_index = [i for i, x in enumerate(necessary_test) if x == False]
             missing_keys = [necessary_keys[i] for i in false_index]
             raise ValueError('Missing keys ', missing_keys)
 
-        self.image_dim = par["image_dim"]
-        self.num_reads = par["num_reads"]
-        self.num_coils = par["num_coils"]
-        self.num_proj = par["num_proj"]
-        self.DTYPE = par.get("DTYPE", np.complex64)
-        self.DTYPE_real = par.get("DTYPE_real", np.float32)
+        self.image_dim = data_par["image_dim"]
+        self.num_reads = data_par["num_reads"]
+        self.num_coils = data_par["num_coils"]
+        self.num_proj = data_par["num_proj"]
+        self.DTYPE = data_par.get("DTYPE", np.complex64)
+        self.DTYPE_real = data_par.get("DTYPE_real", np.float32)
 
     @abstractmethod
     def forward(self, inp):
@@ -554,16 +554,9 @@ class MRIImagingModel(Operator):
         Args
         ----
             par (dict):
-                A python dict containing the necessary information to
-                setup the object. Needs to contain the number of slices
-                (num_slc),
-                number of scans (num_scans), image dimensions (dimX, dimY),
-                number of coils (num_coils), sampling pos (num_reads)
-                and read outs (num_proj) and the complex coil sensitivities
-                (coils).
-                The above is just not true. The __init__ statement says so.
-                We use the keys 'Data' and 'FFT' here all of a sudden.
-                Previously par contained only the content of 'Data'. This is very confusing.
+                A dictionary containing a 'Data' key and 'FFT' key. These are
+                added in the `setup_parameter_dict` function.
+
             trajectory (numpy.array):
                 Trajectory information for kx/ky/kz points.
         """

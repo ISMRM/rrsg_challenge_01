@@ -392,16 +392,19 @@ def _run_reco(args):
         args.configfile,
         rawdata=kspace_data, 
         trajectory=trajectory)
+
     # Decorrelate Coil channels if noise scan is present
     kspace_data = _decor_noise(
-        kspace_data, 
-        noise, 
-        parameter["Data"])
+        data=kspace_data,
+        noise=noise,
+        par=parameter["Data"])
+
     # Get coil sensitivities in the parameter dict
     estimate_coil_sensitivities(
         kspace_data, 
         trajectory, 
         parameter)
+
     # Get operator
     MRImagingOperator = linop.MRIImagingModel(parameter, trajectory)
     cgs = solver.CGReco(
