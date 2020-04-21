@@ -225,49 +225,55 @@ def setup_parameter_dict(
 
     Args
     ----
+        configfile (str):
+            path to configuration file
         rawdata (np.complex64):
             The raw k-space data
+        trajectory (np.array):
+            The associated trajectory data
 
     Returns
     -------
         par (dict):
             A dictionary storing reconstruction related parameters like
             number of coils and image dimension in 2D.
+            Also an
     """
     # Create empty dict
     parameter = {}
     config = configparser.ConfigParser()
-    if configfile.split('.')[-1] == "txt":
-        pass
-    else:
-        configfile = configfile+'.txt'
+    ext = os.path.splitext(configfile)[-1]
+    if ext != "txt":
+        configfile = configfile + '.txt'
+
     config.read(configfile)
-    for sectionkey in config.sections():
-        parameter[sectionkey] = {}
-        for valuekey in config[sectionkey].keys():
-            if "do_" in valuekey:
+    for section_key in config.sections():
+        parameter[section_key] = {}
+        for value_key in config[section_key].keys():
+            if "do_" in value_key:
                 try:  
-                    parameter[sectionkey][valuekey] = config.getboolean(
-                        sectionkey, 
-                        valuekey)  
+                    parameter[section_key][value_key] = config.getboolean(
+                        section_key,
+                        value_key)
                 except:
-                    parameter[sectionkey][valuekey] = config.get(
-                        sectionkey, 
-                        valuekey)
+                    parameter[section_key][value_key] = config.get(
+                        section_key,
+                        value_key)
             else:
                 try:
-                    parameter[sectionkey][valuekey] = config.getint(
-                        sectionkey, 
-                        valuekey)
+                    parameter[section_key][value_key] = config.getint(
+                        section_key,
+                        value_key)
                 except:
                     try:
-                        parameter[sectionkey][valuekey] = config.getfloat(
-                            sectionkey, 
-                            valuekey)
+                        parameter[section_key][value_key] = config.getfloat(
+                            section_key,
+                            value_key)
                     except:
-                        parameter[sectionkey][valuekey] = config.get(
-                            sectionkey, 
-                            valuekey)
+                        parameter[section_key][value_key] = config.get(
+                            section_key,
+                            value_key)
+
     if parameter["Data"]["precision"].lower() == "single":
         parameter["Data"]["DTYPE"] = np.complex64
         parameter["Data"]["DTYPE_real"] = np.float32
