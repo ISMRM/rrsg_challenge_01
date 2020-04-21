@@ -294,8 +294,7 @@ def setup_parameter_dict(
     
     # Calculate density compensation for non-cartesian data.
     if parameter["Data"]["do_density_correction"]:
-        FFT = linop.NUFFT(data_par=parameter["Data"], 
-                          fft_par=parameter["FFT"],
+        FFT = linop.NUFFT(par=parameter,
                           trajectory=trajectory)
         parameter["FFT"]["gridding_matrix"] = FFT.gridding_mat
         parameter["FFT"]["dens_cor"] = np.sqrt(

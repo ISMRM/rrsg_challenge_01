@@ -202,7 +202,7 @@ class NUFFT(Operator):
             par["Data"]["num_reads"],
             par["FFT"]["kernellength"])
 
-        deapodization = 1 / kerneltable_FT.astype(par["Data"]["DTYPE_real"])
+        deapodization = 1 / kerneltable_FT.astype(self.DTYPE_real)
         self.deapodization = np.outer(deapodization, deapodization)
 
         if "dens_cor" in par["FFT"].keys():
@@ -210,7 +210,7 @@ class NUFFT(Operator):
         else:
             self.dens_comp = np.ones(
                 trajectory.shape[:-1],
-                dtype=par["Data"]["DTYPE_real"]
+                dtype=self.DTYPE_real
                 )
         self.trajectory = trajectory
 

@@ -73,9 +73,7 @@ def estimate_coil_sensitivities(data, trajectory, par):
          par["Data"]["image_dim"]), 
         dtype=par["Data"]["DTYPE"])
 
-    FFT = linop.NUFFT(data_par=par["Data"], 
-                      fft_par=par["FFT"],
-                      trajectory=trajectory)
+    FFT = linop.NUFFT(par=par, trajectory=trajectory)
 
     combined_data = FFT.adjoint(data * par["FFT"]["dens_cor"])
     combined_data = np.fft.fft2(
