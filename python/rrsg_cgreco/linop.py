@@ -159,8 +159,7 @@ class NUFFT(Operator):
 
     def __init__(
             self,
-            data_par,
-            fft_par,
+            par,
             trajectory,
             fft_dim=(-2, -1),
             ):
@@ -169,7 +168,9 @@ class NUFFT(Operator):
 
         Args
         ----
-            data_par (dict):
+            par (dict):
+                Contains two important dictionaries.. 'Data' and 'FFT'.
+                Content is filled.
                 A python dict containing the necessary information to
                 setup the object. Needs to contain the number of slices
                 (num_slc), number of scans (num_scans),
@@ -178,6 +179,7 @@ class NUFFT(Operator):
                 (Optional) The dictionary can contain specification of
                 DTYPE and DTYPE_real.
                 overgridfactor..?? This is not necessary information?
+
             fft_par (??):
                 ... kernelwidth..? kernellength..? ..
                 (Optional) gridding_matrix ? dens_cor..? .. Needs to check this content as well..?
@@ -190,34 +192,34 @@ class NUFFT(Operator):
                 A tuple containing the axes over which the Fourier Transform
                 is performed.
         """
-        super().__init__(data_par)
+        super().__init__(par["Data"])
         
-        self.overgridfactor = data_par["overgridfactor"]
+        self.overgridfactor = par["Data"]["overgridfactor"]
 
         (self.kerneltable, kerneltable_FT, u) = calculate_keiser_bessel_kernel(
-            fft_par["kernelwidth"],
+            par["FFT"]["kernelwidth"],
             self.overgridfactor,
-            data_par["num_reads"],
-            fft_par["kernellength"])
+            par["Data"]["num_reads"],
+            par["FFT"]["kernellength"])
 
-        deapodization = 1 / kerneltable_FT.astype(data_par["DTYPE_real"])
+        deapodization = 1 / kerneltable_FT.astype(par["Data"]["DTYPE_real"])
         self.deapodization = np.outer(deapodization, deapodization)
 
-        if "dens_cor" in fft_par.keys():
-            self.dens_comp = fft_par["dens_cor"]        
+        if "dens_cor" in par["FFT"].keys():
+            self.dens_comp = par["FFT"]["dens_cor"]
         else:
             self.dens_comp = np.ones(
                 trajectory.shape[:-1],
-                dtype=data_par["DTYPE_real"]
+                dtype=par["Data"]["DTYPE_real"]
                 )
         self.trajectory = trajectory
 
         self.n_kernel_points = self.kerneltable.size
-        self.grid_size = data_par["num_reads"]
-        self.kwidth = (fft_par["kernelwidth"] / 2) / self.grid_size
+        self.grid_size = par["Data"]["num_reads"]
+        self.kwidth = (par["FFT"]["kernelwidth"] / 2) / self.grid_size
         self.fft_dim = fft_dim
-        if "gridding_matrix" in fft_par.keys():
-            self.gridding_mat = fft_par["gridding_matrix"]
+        if "gridding_matrix" in par["FFT"].keys():
+            self.gridding_mat = par["FFT"]["gridding_matrix"]
         else:
             self.gridding_mat = self._generate_gridding_matrix()
         self.gridding_mat_adj = self.gridding_mat.transpose()
@@ -563,10 +565,8 @@ class MRIImagingModel(Operator):
         super().__init__(par["Data"])
 
         self.NUFFT = NUFFT(
-            data_par=par["Data"],
-            fft_par=par["FFT"],
-            trajectory=trajectory
-            )
+            par=par,
+            trajectory=trajectory)
         self.coils = par["Data"]["coils"]
         self.conj_coils = np.conj(self.coils)
 
