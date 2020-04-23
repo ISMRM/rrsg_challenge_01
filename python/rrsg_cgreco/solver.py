@@ -35,20 +35,32 @@ class CGReco:
 
     Attributes
     ----------
-        dimX (int):
-            X dimension of the parameter maps
-        dimY (int):
-            Y dimension of the parameter maps
+        image_dim (int):
+            Dimension of the reconstructed image
         num_coils (int):
             Number of coils
-        NScan (int):
-            Number of Scans
-       NSlice (ind):
+        do_incor (bool):
+            Flag to do intensity correction:
+        incor (np.complex64):
+            Intensity correction array
+        maxit (int):
+            Maximum number of CG iterations
+        lambd (float):
+            Weight of the Tikhonov regularization. Defaults to 0
+        tol (float):
+            Tolerance to terminate iterations. Defaults to 0
+        NSlice (ind):
            Number of Slices
         DTYPE (numpy.type):
             The complex value precision. Defaults to complex64
         DTYPE_real (numpy.type):
             The real value precision. Defaults to float32
+        res (list):
+            List to store residual values
+        operator (linop.Operator):
+            MRI imaging operator to traverse from k-space to imagespace and
+            vice versa.
+            
     """
 
     def __init__(self, data_par, optimizer_par):
@@ -57,20 +69,19 @@ class CGReco:
 
         Args
         ----
-            par (dict):
+            data_par (dict):
                 A python dict containing the necessary information to
-                setup the object. Needs to contain the number of slices
-                (NSlice), number of scans (NScan), image dimensions
-                (dimX, dimY), number of coils (num_coils),
-                sampling pos (N) and read outs (NProj) and the
-                complex coil sensitivities (C).
-            DTYPE (Numpy.Type):
-                The comlex precision type. Currently complex64 is used.
-            DTYPE_real (Numpy.Type):
-                The real  type. Currently float32 is used.
+                setup the object. Needs to contain the image dimensions 
+                (img_dim), number of coils (num_coils),
+                sampling points (num_reads) and read outs (num_proj) and the
+                complex coil sensitivities (Coils).
+            optimizer_par (dict):
+                Parameter containing the optimization related settings.
+
         """
         self.image_dim = data_par["image_dim"]
         self.num_coils = data_par["num_coils"]
+
         self.DTYPE = data_par["DTYPE"]
         self.DTYPE_real = data_par["DTYPE_real"]
 
@@ -81,10 +92,9 @@ class CGReco:
         self.lambd=optimizer_par["lambda"]
         self.tol=optimizer_par["tolerance"]
 
-        self.fval_min = 0
-        self.fval = 0
         self.res = []
         self.operator = None
+        
 
     def set_operator(self, op):
         """
@@ -105,7 +115,7 @@ class CGReco:
         """
         Compute the LHS of the normal equation.
 
-        This functions compute the left hand side of the normal equation,
+        This function computes the left hand side of the normal equation,
         evaluation A^TA x on the input x.
 
         Args
@@ -126,7 +136,7 @@ class CGReco:
         """
         Compute the RHS of the normal equation.
 
-        This functions compute the right hand side of the normal equation,
+        This function computes the right hand side of the normal equation,
         evaluation A^T b on the k-space data b.
 
         Args
@@ -144,6 +154,21 @@ class CGReco:
         return self.operator.adjoint(inp)
 
     def kspace_filter(self, x):
+        """
+        Performs k-space filtering.
+
+        This function filters out k-space points outside the acquired 
+        trajectory, setting the corresponding k-space position to 0.
+
+        Args
+        ----
+            x (numpy.Array):
+                The complex image-space data to filter.
+
+        Returns
+        -------
+            numpy.Array: Filtered image-space data.
+        """
         print("Performing k-space filtering")
         kpoints = (np.arange(-np.floor(self.operator.num_reads/2),
                             np.ceil(self.operator.num_reads/2))
@@ -205,12 +230,6 @@ class CGReco:
                 The complex k-space data to fit.
             guess (numpy.Array=None):
                 Optional initial guess for the image.
-            maxit (int=10):
-                Maximum number of CG steps.
-            lambd (float=1e-8):
-                Regularization weight for Tikhonov regularizer.
-            tol (float=1e-5):
-                Relative tolerance to terminate optimization.
 
         Returns
         -------

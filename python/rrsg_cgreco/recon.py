@@ -46,15 +46,10 @@ def _get_args(
 
     Args
     ----
-        config (string):
-            Name of config file to use (default).
+        configfile (string):
+            Path to the config file to use (default).
             The file is assumed to be in the same folder where the script
             is run. If not specified, use default parameters.
-        do_inscale (bool):
-            Wether to perform intensity scaling. Defaults to True.
-        do_denscor (bool):
-            Switch to choose between reconstruction with (True) or
-            without (False) density compensation. Defaults to True.
         pathtofile (string):
             Full qualified path to the h5 data file.
 
@@ -96,29 +91,17 @@ def run(
 
     Args
     ----
-        config (string):
-            Name of config file to use (default).
+        configfile (string):
+            Path to the config file to use (default).
             The file is assumed to be in the same folder where the script
             is run. If not specified, use default parameters.
-
-        inscale (bool):
-            Wether to perform intensity scaling. Defaults to True.
-
-        denscor (bool):
-            Switch to choose between reconstruction with (True) or
-            without (False) density compensation. Defaults to True.
-
-        data (string):
+        pathtofile (string):
             Full qualified path to the h5 data file.
 
         undersampling_factor (int):
-             Desired acceleration compared to the number of
-             spokes provided in data.
-             E.g. 1 uses all available spokes 2 every 2nd.
-
-        overgridding_factor (string):
-            Ratio between Cartesian cropped grid and full regridded
-            k-space grid.
+            Desired undersampling compared to the number of
+            spokes provided in data.
+            E.g. 1 uses all available spokes 2 every 2nd.
     """
     args = _get_args(
         configfile,
@@ -147,20 +130,28 @@ def read_data(
 
     Args
     ----
-        path (string):
+        pathtofile (string):
             Full qualified path to the .h5 data file.
         undersampling_factor (int):
             Desired acceleration compared to the number of
             spokes provided in data.
             E.g. 1 uses all available spokes 2 every 2nd.
-        par (dict):
-            Dictionary for storing data and parameters.
+        data_rawdata_key (string):
+            Name of the data array in the .h5 file. defaults to "rawdata"
+        data_trajectory_key (string):
+            Name of the trajectory array in the .h5 file. defaults to 
+            "trajectory"
+        noise_key (string):
+            Name of the noise reference array in the .h5 file.
+            defaults to "noise"
     Retruns
     -------
         rawdata (np.complex64):
             The rawdata array
         trajectory (np.complex64):
             The k-space trajectory
+        noise_scan (np.complex64):
+            The noise reference scan
     Raises
     ------
          ValueError:
@@ -234,10 +225,9 @@ def setup_parameter_dict(
 
     Returns
     -------
-        par (dict):
+        parameter (dict):
             A dictionary storing reconstruction related parameters like
             number of coils and image dimension in 2D.
-            Also an
     """
     # Create empty dict
     parameter = {}
@@ -325,6 +315,12 @@ def save_to_file(
     ----
       result (np.complex64):
         The reconstructed complex images to save.
+      residuals (list):
+        List of residual values of the CG algorithm.
+      single_coil_images (np.complex64):
+        The complex single coil image to save.
+      data_par (dict):
+        The data parameter dict.
       args (ArgumentParser):
          Console arguments passed to the script.
     """

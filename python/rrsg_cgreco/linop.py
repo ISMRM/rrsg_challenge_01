@@ -20,18 +20,12 @@ class Operator(ABC):
 
     Attributes
     ----------
-        num_scans (int):
-            Number of total measurements (Scans)
         num_coils (int):
             Number of complex coils
-        num_slc (int):
-            Number of slices
-        dimX (int):
-            X dimension of the parameter maps
-        dimY (int):
-            Y dimension of the parameter maps
-        N (int):
-            N number of samples per readout
+        image_dim (int):
+            Dimension of the parameter maps. Assumed to be square
+        num_reads (int):
+            Number of samples per readout
         num_proj (int):
             Number of readouts
         DTYPE (numpy.type):
@@ -48,11 +42,10 @@ class Operator(ABC):
         ----
             data_par (dict):
                 A python dict containing the necessary information to
-                setup the object. Needs to contain the number of slices
-                (num_slc),
-                number of scans (num_scans), image dimensions (dimX, dimY),
+                setup the object. Needs to contain the image dimensions 
+                (image_dim),
                 number of coils (num_coils),
-                sampling pos (N) and read outs (num_proj).
+                sampling points (num_reads) and read outs (num_proj).
                 (Optional) content of the data_par (dict) is the DTYPE and
                 DTYPE_real specification. The default value will be
                 np.complex64 and np.float32 respectively.
@@ -146,7 +139,7 @@ class NUFFT(Operator):
             backward FFT.
         kerneltable (Numpy.Array):
             The gridding lookup table
-        deapo (Numpy.Array):
+        deapodization (Numpy.Array):
             The de-apodization lookup table
         n_kernel_points (int):
             The number of points in the precomputed gridding kernel
@@ -154,6 +147,10 @@ class NUFFT(Operator):
             The size of the grid to interpolate to
         kwidth (float):
             The half width of the kernel relative to the number of grid-points
+        fft_dim (tuple)
+            Tuple of dimensions to take the fft over. Defaults to the last 2.
+        grigging_mat (scipy.sparse.csc_matrix):
+            The precomputed gridding matrix.
     """
 
     def __init__(
@@ -168,23 +165,8 @@ class NUFFT(Operator):
         Args
         ----
             par (dict):
-                Contains two important dictionaries.. 'Data' and 'FFT'.
-                Content is filled.
-                A python dict containing the necessary information to
-                setup the object. Needs to contain the number of slices
-                (num_slc), number of scans (num_scans),
-                image dimensions (dimX, dimY), number of coils (num_coils),
-                sampling pos (N) and read outs (num_proj).
-                (Optional) The dictionary can contain specification of
-                DTYPE and DTYPE_real.
-                overgridfactor..?? This is not necessary information?
-
-            fft_par (??):
-                ... kernelwidth..? kernellength..? ..
-                (Optional) gridding_matrix ? dens_cor..? .. Needs to check this content as well..?
-                The width of the sampling kernel for re-gridding of non-uniform kspace samples.
-
-                The length of the kernel lookup table which samples the continuous gridding kernel.
+                Contains the Data related dictionary "Data" and FFT parameter 
+                related parameter "FFT" dictionaries. 
             trajectory (numpy.array):
                 Trajectory information for kx/ky/kz points. Expects a shape of (num_scans, num_proj, 3)
             fft_dim (tuple):

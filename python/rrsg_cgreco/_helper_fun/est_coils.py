@@ -30,8 +30,110 @@ from rrsg_cgreco import linop
 # (see Martin Uecker: Image reconstruction by regularized nonlinear
 # inversion joint estimation of coil sensitivities and image content)
 
+def estimate_coil_sensitivities(data, trajectory, par, NLINV=False):
+    """
+      Estimate complex coil sensitivities.
 
-def estimate_coil_sensitivities(data, trajectory, par):
+      Estimate complex coil sensitivities using either a sum-of-squares based
+      approach (NLINV=False) or NLINV from Martin Uecker et al. (NLINV=True)
+
+
+    Args
+    ----
+          data (numpy.array):
+              complex k-space data
+          trajectory (numpy.array):
+              trajectory information
+          par (dict):
+              A python dict containing the necessary information to
+              setup the object. Needs to contain the number of slices
+              (num_slc), number of scans (num_scans),
+              image dimensions (dimX, dimY), number of coils (num_coils),
+              sampling pos (num_reads) and read outs (num_proj).
+          NLINV (bool):
+              Switch between NLINV or sum-of-squares based coil estimation.
+              Defaults to sum-of-squares (NLINV=False).
+    """
+    if NLINV:
+        estimate_coil_sensitivities_NLINV(data, trajectory, par)
+    else:
+        estimate_coil_sensitivities_SOS(data, trajectory, par)
+        
+        
+def estimate_coil_sensitivities_SOS(data, trajectory, par):   
+    """
+      Estimate complex coil sensitivities using a sum-of-squares approach.
+
+      Estimate complex coil sensitivities by dividing each coil channel
+      with the SoS reconstruciton. A Hann window is used to filter out high
+      k-space frequencies.
+
+
+    Args
+    ----
+          data (numpy.array):
+              complex k-space data
+          trajectory (numpy.array):
+              trajectory information
+          par (dict):
+              A python dict containing the necessary information to
+              setup the object. Needs to contain the number of slices
+              (num_slc), number of scans (num_scans),
+              image dimensions (dimX, dimY), number of coils (num_coils),
+              sampling pos (num_reads) and read outs (num_proj).
+    """
+    par["Data"]["coils"] = np.zeros(
+        (par["Data"]["num_coils"], 
+         par["Data"]["image_dim"], 
+         par["Data"]["image_dim"]), 
+        dtype=par["Data"]["DTYPE"])
+
+    par["Data"]["phase_map"] = np.zeros(
+        (par["Data"]["image_dim"],
+         par["Data"]["image_dim"]), 
+        dtype=par["Data"]["DTYPE"])    
+
+    FFT = linop.NUFFT(par=par, trajectory=trajectory)
+    
+
+    windowsize = 50
+    window = np.hanning(windowsize)
+    window = np.pad(window, int((par["Data"]["num_reads"]-windowsize)/2))
+    
+    lowres_data = data*window.T
+
+    coil_images = FFT.adjoint(lowres_data * par["FFT"]["dens_cor"])
+    combined_image = np.sqrt(
+        1/coil_images.shape[0]
+        *np.sum(np.abs(coil_images)**2,0)
+        )
+    
+    coils = coil_images/combined_image
+    
+
+    par["Data"]["coils"] = coils
+    
+    # standardize coil sensitivity profiles
+    sumSqrC = np.sqrt(
+        np.sum(
+            (par["Data"]["coils"]
+             *
+             np.conj(
+                 par["Data"]["coils"]
+                 )
+             ),
+            0
+            )
+        )
+    par["Data"]["in_scale"] = sumSqrC
+    if par["Data"]["num_coils"] == 1:
+        par["Data"]["coils"] = sumSqrC
+    else:
+        par["Data"]["coils"] = (
+            par["Data"]["coils"] / sumSqrC)
+
+
+def estimate_coil_sensitivities_NLINV(data, trajectory, par):
     """
       Estimate complex coil sensitivities using NLINV from Martin Uecker et al.
 
