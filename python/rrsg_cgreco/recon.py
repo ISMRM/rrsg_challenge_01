@@ -284,6 +284,16 @@ def setup_parameter_dict(
     
     # Calculate density compensation for non-cartesian data.
     if parameter["Data"]["do_density_correction"]:
+        compute_density_compensation(parameter, trajectory)
+        
+    else:
+        parameter["FFT"]["dens_cor"] = np.ones(
+            trajectory.shape[:-1],
+            dtype=parameter["Data"]["DTYPE_real"]
+            )
+    return parameter
+
+def compute_density_compensation(parameter, trajectory):
         FFT = linop.NUFFT(par=parameter,
                           trajectory=trajectory)
         parameter["FFT"]["gridding_matrix"] = FFT.gridding_mat
@@ -293,12 +303,22 @@ def setup_parameter_dict(
                 parameter["FFT"]["gridding_matrix"]
                 )
             )
-    else:
-        parameter["FFT"]["dens_cor"] = np.ones(
-            trajectory.shape[:-1],
-            dtype=parameter["Data"]["DTYPE_real"]
-            )
-    return parameter
+        FFT = linop.NUFFT(par=parameter,
+                          trajectory=trajectory)
+        
+        ## Check intensity scaling of dirac function - should be 1
+        image_dirac = np.zeros((parameter["Data"]["image_dim"],
+                                parameter["Data"]["image_dim"]),
+                               dtype=parameter["Data"]["DTYPE"])
+        image_dirac[int(parameter["Data"]["image_dim"]/2), 
+                    int(parameter["Data"]["image_dim"]/2)] = 1
+        impulse_response = FFT.adjoint(FFT.forward(image_dirac))
+        scale = impulse_response[0, int(parameter["Data"]["image_dim"]/2), 
+                                 int(parameter["Data"]["image_dim"]/2)]
+        parameter["FFT"]["dens_cor"] *= (
+            1/np.sqrt(scale)
+            ).astype(parameter["Data"]["DTYPE_real"])
+
 
 
 def save_to_file(
