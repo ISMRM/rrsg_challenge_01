@@ -76,7 +76,6 @@ def get_golden_angle_dcf(k):
 
     w = np.abs(np.linspace(-N/2, N/2, N))/(N/2)  # ramp from -1...1
     w = np.repeat(w, nspokes, 0)
-    # w /= np.min(w)
     w *= (N * np.pi / 4) / nspokes
     w = np.reshape(w, (N, nspokes)).T
     return w

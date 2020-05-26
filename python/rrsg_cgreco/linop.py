@@ -54,7 +54,8 @@ class Operator(ABC):
         necessary_keys = ['image_dim', 'num_coils', 'num_reads', 'num_proj']
         necessary_test = [x in data_par for x in necessary_keys]
         if not all(necessary_test):
-            false_index = [i for i, x in enumerate(necessary_test) if x == False]
+            false_index = [i for i, x in 
+                           enumerate(necessary_test) if x == False]
             missing_keys = [necessary_keys[i] for i in false_index]
             raise ValueError('Missing keys ', missing_keys)
 
@@ -135,8 +136,8 @@ class NUFFT(Operator):
         overgridfactor (float):
             The over-gridding factor for non-cartesian k-spaces.
         fft_scale (float32):
-            The scaling factor to achieve a good adjointness of the forward and
-            backward FFT.
+            The scaling factor to achieve a good adjointness of the forward 
+            and backward FFT.
         kerneltable (Numpy.Array):
             The gridding lookup table
         deapodization (Numpy.Array):
@@ -168,7 +169,8 @@ class NUFFT(Operator):
                 Contains the Data related dictionary "Data" and FFT parameter 
                 related parameter "FFT" dictionaries. 
             trajectory (numpy.array):
-                Trajectory information for kx/ky/kz points. Expects a shape of (num_scans, num_proj, 3)
+                Trajectory information for kx/ky/kz points. Expects a shape of 
+                (num_scans, num_proj, 3)
             fft_dim (tuple):
                 A tuple containing the axes over which the Fourier Transform
                 is performed.
@@ -261,7 +263,10 @@ class NUFFT(Operator):
         ogkspace = np.fft.fftshift(ogkspace, axes=(-2, -1))
 
         # Resample on Spoke
-        kspace = np.zeros((self.num_coils, self.num_proj, self.num_reads), dtype=self.DTYPE)
+        kspace = np.zeros(
+            (self.num_coils, self.num_proj, self.num_reads), 
+            dtype=self.DTYPE
+            )
         for nc in range(self.num_coils):
             kspace[nc] = np.reshape(
                 self.gridding_mat.dot(ogkspace[nc].flatten()), 
@@ -366,8 +371,9 @@ class NUFFT(Operator):
                         if gcount2 >= self.grid_size:
                             indy -= self.grid_size
                             indx = self.grid_size - indx
-
-                        temp_mapping.append((indx, indy))  # Here for demonstration purposes
+                            
+                        # Here for demonstration purposes
+                        temp_mapping.append((indx, indy))  
 
                         sg[:, indy, indx] += (
                             kern * kdat[
@@ -376,8 +382,8 @@ class NUFFT(Operator):
                                 iread
                                 ]
                             )
-
-            grid_point_mapping.append(temp_mapping)  # Here for demonstration purposes
+            # Here for demonstration purposes
+            grid_point_mapping.append(temp_mapping)  
 
         if return_mapping:
             return sg, grid_point_mapping
@@ -462,10 +468,22 @@ class NUFFT(Operator):
                 kx = self.trajectory[iproj, ismpl, 1]
                 ky = self.trajectory[iproj, ismpl, 0]
     
-                ixmin = int((kx - self.kwidth) * self.grid_size + gridcenter)
-                ixmax = int((kx + self.kwidth) * self.grid_size + gridcenter) + 1
-                iymin = int((ky - self.kwidth) * self.grid_size + gridcenter)
-                iymax = int((ky + self.kwidth) * self.grid_size + gridcenter) + 1
+                ixmin = int(
+                    (kx - self.kwidth) 
+                    * self.grid_size + gridcenter
+                    )
+                ixmax = int(
+                    (kx + self.kwidth) 
+                    * self.grid_size + gridcenter
+                    ) + 1
+                iymin = int(
+                    (ky - self.kwidth) 
+                    * self.grid_size + gridcenter
+                    )
+                iymax = int(
+                    (ky + self.kwidth) 
+                    * self.grid_size + gridcenter
+                    ) + 1
 
                 for gcount1 in np.arange(ixmin, ixmax+1):
                     dkx = (gcount1 - gridcenter) / self.grid_size - kx
@@ -473,7 +491,8 @@ class NUFFT(Operator):
                         dky = (gcount2 - gridcenter) / self.grid_size - ky
                         dk = np.sqrt(dkx ** 2 + dky ** 2)
                         if dk < self.kwidth:
-                            fracind = dk / self.kwidth * (self.n_kernel_points - 1)
+                            fracind = (dk / self.kwidth 
+                                       * (self.n_kernel_points - 1))
                             kernelind = int(fracind)
                             fracdk = fracind - kernelind
                             kern = (

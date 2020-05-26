@@ -38,35 +38,35 @@ from scipy.special import i0 as i0
 # Modified by O. Maier
 
 
-def kaiser_bessel(u, w, beta, G):
+def kaiser_bessel(u, width, beta, gridisze):
     """
     Kaiser-Bessel window precomputation.
 
     Args
     ----
       u (numpy.array):
-         Kernel Radii in grid samples
-      w (int):
-        Kernel width in grid samples
+        Kernel Radii in per-grid-samples
+      width (int):
+        Kernel width in per-grid-samples
       beta (float):
-        scale for the argument of the modified bessel function of oder 0,
+        Scale for the argument of the modified bessel function of oder 0,
         see Jackson '91 and Beatty et al.
-      G (int):
-        Grid samples
+      gridsize (int):
+        Gridsize of oversampled grid
 
     Returns
     -------
       numpy.array
         Ramp for golden angle density compensation
     """
-    assert np.size(w) == 1, 'w should be a single scalar value.'
+    assert np.size(width) == 1, 'width should be a single scalar value.'
 
     y = np.zeros_like(u)  # Allocate space.
-    uz = np.where(np.abs(u) <= w / (2 * G))  # Indices where u<w/2.
+    uz = np.where(np.abs(u) <= width / (2 * gridisze))  # Indices where u<w/2.
 
     if np.size(uz) > 0:  # Calculate y at indices uz.
-        x = beta * np.sqrt(1 - (2 * u[uz] * G / w) ** 2)
+        x = beta * np.sqrt(1 - (2 * u[uz] * gridisze / width) ** 2)
         # Argument - see Jackson '91.
-        y[uz] = G * i0(x) / w
+        y[uz] = gridisze * i0(x) / width
 
     return y

@@ -261,7 +261,7 @@ class CGReco:
             )
         result[~np.isfinite(result)] = 0
         end = time.perf_counter()-start
-        print("-"*80)
+        print("\n"+"-"*80)
         print("Elapsed time: %f seconds" % (end))
         print("-"*80)
         if self.do_incor:
@@ -333,7 +333,7 @@ class CGReco:
             delta = np.linalg.norm(residual_new) ** 2 / np.linalg.norm(b) ** 2
             self.res.append(delta)
             if delta < tol:
-                print("Converged after %i iterations to %1.3e." % (i+1, delta))
+                print("\nConverged after %i iterations to %1.3e." % (i+1, delta))
                 return x[:i+1, ...]
             if not np.mod(i, 1):
                 print("Residuum at iter %i : %1.3e" % (i+1, delta), end='\r')

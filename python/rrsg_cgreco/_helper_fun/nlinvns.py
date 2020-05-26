@@ -42,26 +42,23 @@ def nlinvns(Y, n, *arg):  # *returnProfiles,**realConstr):
         R = np.zeros([2, n, y, x], complex)
 
     # initialization x-vector
-    X0 = np.array(np.zeros([c + 1, y, x]), np.complex64)  # 5,128,128
-    X0[0, :, :] = 1  # object part
+    X0 = np.array(np.zeros([c + 1, y, x]), np.complex64)
+    X0[0, :, :] = 1
 
     # initialize mask and weights
-    P = np.ones(Y[0, :, :].shape, dtype=np.complex64)  # 128,128
+    P = np.ones(Y[0, :, :].shape, dtype=np.complex64)
     P[Y[0, :, :] == 0] = 0
 
-    W = weights(x, y)  # W128,128
+    W = weights(x, y)
 
-#    P = fftshift2(P)  #128,128
     W = np.fft.fftshift(W, axes=(-2, -1))
-    # Y = fftshift2(Y)  # 4,128,128
 
     # normalize data vector
     yscale = 100 / np.sqrt(scal(Y, Y))
-    YS = Y * yscale  # check
-    # YS = np.round(YS,4) #4,128,128
+    YS = Y * yscale 
 
-    XT = np.zeros([c + 1, y, x], dtype=np.complex64)  # 5,128,128
-    XN = np.copy(X0)  # 5,128,128
+    XT = np.zeros([c + 1, y, x], dtype=np.complex64)
+    XN = np.copy(X0)
 
     start = time.perf_counter()
     for i in range(0, n):
@@ -69,16 +66,13 @@ def nlinvns(Y, n, *arg):  # *returnProfiles,**realConstr):
         # the application of the weights matrix to XN
         # is moved out of the operator and the derivative
         XT[0, :, :] = np.copy(XN[0, :, :])
-        # W((+1)128,128)[None,...] (5,128,128)
         XT[1:, :, :] = apweightsns(W, np.copy(XN[1:, :, :]))
 
         RES = (YS - opns(P, XT))
 
-        print(np.round(np.linalg.norm(RES)))  # check
-#        print(RES.shape)  4,128,128
+        print(np.round(np.linalg.norm(RES))) 
 
         # calculate rhs
-        # 128,128  128,128   5,128,128  4,128,128
         r = derHns(P, W, XT, RES, realConstr)
 
         r = np.array(r + alpha * (X0 - XN), dtype=np.complex64)
@@ -92,7 +86,6 @@ def nlinvns(Y, n, *arg):  # *returnProfiles,**realConstr):
 
             # regularized normal equations
             q = derHns(P, W, XT, derns(P, W, XT, d), realConstr) + alpha * d
-#            q.shape = (5,128,128)
             np.nan_to_num(q)
 
             a = dnew / np.real(scal(d, q))
@@ -118,7 +111,7 @@ def nlinvns(Y, n, *arg):  # *returnProfiles,**realConstr):
         CR = apweightsns(W, XN[1:, :, :])
 
         if returnProfiles:
-            R[2:, i, :, :] = CR / yscale  # ,6,9,128,128
+            R[2:, i, :, :] = CR / yscale
 
         C = (np.conj(CR) * CR).sum(0)
 
@@ -131,7 +124,7 @@ def nlinvns(Y, n, *arg):  # *returnProfiles,**realConstr):
     return R
 
 
-def scal(a, b):  # check
+def scal(a, b):
     v = np.array(np.sum(np.conj(a) * b), dtype=np.complex64)
     return v
 
@@ -141,29 +134,27 @@ def apweightsns(W, CT):
     return C
 
 
-def apweightsnsH(W, CT):  # weglassen
+def apweightsnsH(W, CT):
     C = np.conj(W) * nsFft(CT)
     return C
 
 
 def opns(P, X):
     K = np.array(X[0, :, :] * X[1:, :, :], dtype=np.complex64)
-    K = np.array(P * nsFft(K), dtype=np.complex64)  # [None,...]
+    K = np.array(P * nsFft(K), dtype=np.complex64)
     return K
 
 
 def derns(P, W, X0, DX):
     K = X0[0, :, :] * apweightsns(W, DX[1:, :, :])
-    K = K + (DX[0, :, :] * X0[1:, :, :])  # A# 2/1
+    K = K + (DX[0, :, :] * X0[1:, :, :])
     K = P * nsFft(K)
     return K
 
 
 def derHns(P, W, X0, DK, realConstr):
-    # print('derHns')
     K = nsIfft(P * DK)
 
-#    print(K.shape) #4,128,128
     if realConstr:
         DXrho = np.sum(np.real(K * np.conj(X0[1:, :, :])), 0)
     else:
@@ -186,7 +177,6 @@ def nsFft(M):
 def nsIfft(M):
     si = M.shape
     a = np.sqrt(si[M.ndim - 1]) * np.sqrt(si[M.ndim - 2])
-    # K = np.array(np.fft.ifftn(M, axes=(0,)),dtype=np.float64) #*a
     K = np.array(pyfftw.interfaces.numpy_fft.ifft2(M, norm=None).dot(a))
     return K  # .T
 
@@ -196,5 +186,5 @@ def weights(x, y):
     for i in range(0, x):
         for j in range(0, y):
             d = ((i) / x - 0.5)**2 + ((j) / y - 0.5)**2
-            W[j, i] = 1 / (1 + 220 * d)**16  # 16
+            W[j, i] = 1 / (1 + 220 * d)**16
     return W

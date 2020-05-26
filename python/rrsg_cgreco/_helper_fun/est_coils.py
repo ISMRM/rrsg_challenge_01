@@ -113,7 +113,7 @@ def estimate_coil_sensitivities_SOS(data, trajectory, par):
 
     par["Data"]["coils"] = coils
     
-    # standardize coil sensitivity profiles
+    # normalize coil sensitivity profiles
     sumSqrC = np.sqrt(
         np.sum(
             (par["Data"]["coils"]
@@ -205,7 +205,7 @@ def estimate_coil_sensitivities_NLINV(data, trajectory, par):
                 )
             )
 
-    # standardize coil sensitivity profiles
+    # normalize coil sensitivity profiles
     sumSqrC = np.sqrt(
         np.sum(
             (par["Data"]["coils"]

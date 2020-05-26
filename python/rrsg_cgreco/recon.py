@@ -87,7 +87,7 @@ def run(
       undersampling_factor=1,
       ):
     """
-    Run the CG reco of radial data.
+    Run the CG reco of radial or spiral data.
 
     Args
     ----
@@ -158,7 +158,7 @@ def read_data(
              If no data file is specified
     """
     if not os.path.isfile(pathtofile):
-        raise ValueError("Given path is not an existing file.")
+        raise ValueError("Given path does not point to an existing file.")
 
     name = os.path.normpath(pathtofile)
     with h5py.File(name, 'r') as h5_dataset:
@@ -191,6 +191,7 @@ def read_data(
     # Normalize trajectory to the range of (-1/2)/(1/2)
     norm_trajectory = 2 * np.max(np.abs(trajectory))
 
+    # Transpose trajectory to projections/reads/position order
     trajectory = (
       np.require(
         (trajectory / norm_trajectory).T,
@@ -213,6 +214,10 @@ def setup_parameter_dict(
       ):
     """
     Parameter dict generation.
+    
+    This function reads in the parameters given in the configfile as well
+    as some general information about the data and trajectory such as 
+    image size.
 
     Args
     ----
@@ -284,6 +289,7 @@ def setup_parameter_dict(
     
     # Calculate density compensation for non-cartesian data.
     if parameter["Data"]["do_density_correction"]:
+        print("Estimating gridding density...")
         compute_density_compensation(parameter, trajectory)
         
     else:
@@ -294,19 +300,40 @@ def setup_parameter_dict(
     return parameter
 
 def compute_density_compensation(parameter, trajectory):
+        """
+        Compensate for non uniform sampling density
+        
+        This function computes the sampling density via gridding of ones and
+        the correct intensity normalization of the NUFFT operator.
+    
+        Args
+        ----
+            parameter (dict):
+                A dictionary storing reconstruction related parameters like
+               number of coils and image dimension in 2D.
+            trajectory (np.array):
+                The associated trajectory data
+        """
+        
+        # First setup a NUFFT with the given trajectroy
         FFT = linop.NUFFT(par=parameter,
                           trajectory=trajectory)
+        # Extrakt the gridding matrix
         parameter["FFT"]["gridding_matrix"] = FFT.gridding_mat
+        # Grid a k-space of all ones to get an estimated density
+        # and use it as density compensation
         parameter["FFT"]["dens_cor"] = np.sqrt(
             get_density_from_gridding(
                 parameter["Data"], 
                 parameter["FFT"]["gridding_matrix"]
                 )
             )
+        # Build a new NUFFT using the correct density estimation
         FFT = linop.NUFFT(par=parameter,
                           trajectory=trajectory)
         
-        ## Check intensity scaling of dirac function - should be 1
+        # Check intensity scaling of a dirac function - should be 1
+        # Perform normalization to one and add it to the density compensation
         image_dirac = np.zeros((parameter["Data"]["image_dim"],
                                 parameter["Data"]["image_dim"]),
                                dtype=parameter["Data"]["DTYPE"])
@@ -316,7 +343,7 @@ def compute_density_compensation(parameter, trajectory):
         scale = impulse_response[0, int(parameter["Data"]["image_dim"]/2), 
                                  int(parameter["Data"]["image_dim"]/2)]
         parameter["FFT"]["dens_cor"] *= (
-            1/np.sqrt(scale)
+            1/np.sqrt(np.abs(scale))
             ).astype(parameter["Data"]["DTYPE_real"])
 
 
@@ -344,6 +371,7 @@ def save_to_file(
       args (ArgumentParser):
          Console arguments passed to the script.
     """
+    print("Saving results...")
     outdir = ""
     if "heart" in args.pathtofile:
         outdir += os.sep+'heart'
@@ -381,9 +409,30 @@ def save_to_file(
 
 
 def _decor_noise(data, noise, par):
+    """
+    Decorrelate the data with using a given noise covariance matrix
+    
+    Perform prewithening with given noise data. If no data was aquired,
+    the input data without modifications is returned.
+
+    Args
+    ----
+      data (np.complex64):
+        The complex imput data.
+      noise (np.complex64):
+        The complex noise covariance data.
+      par (dict):
+        The data parameter dict.
+        
+    Returns
+    -------
+        data (np.complex64):
+            The prewithened k-space data
+    """
     if noise is None:
         return data
     else:
+        print("Performing noise decorrelation...")
         cov = np.cov(noise)
         L = np.linalg.cholesky(cov)
         invL = np.linalg.inv(L)
@@ -425,6 +474,7 @@ def _run_reco(args):
     cgs = solver.CGReco(
         data_par=parameter["Data"],
         optimizer_par=parameter["Optimizer"])
+    print("Starting reconstruction...")
     cgs.set_operator(MRImagingOperator)
     # Start reconstruction
     # Data needs to be multiplied with the sqrt of dense_cor to assure that
