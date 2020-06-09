@@ -2,12 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="ac54a33a-4b6a-46e3-8fa9-a807c1a0c46d" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/rrsg_challenge_01.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/rrsg_challenge_01.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/_helper_fun/calckbkernel.py" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/_helper_fun/calckbkernel.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/_misc_file.py" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/_misc_file.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/linop.py" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/linop.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/recon.py" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/recon.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/solver.py" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/solver.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/step_by_step_recon.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/step_by_step_recon.ipynb" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -24,19 +22,20 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="JupyterTrust" id="236cbe68-e781-4bad-9e94-e5bf66e699c2" />
+  <component name="JupyterTrust" id="c8e34d26-18c8-4406-b019-9ea890adede6" />
   <component name="ProjectId" id="1XycWmRSP5ge10onY6LKe0SV0px" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
-    <option name="showExcludedFiles" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
-    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PythonContentEntriesConfigurable" />
+    <property name="nodejs_package_manager_path" value="npm" />
+    <property name="settings.editor.selected.configurable" value="preferences.keymap" />
   </component>
   <component name="PyConsoleOptionsProvider">
     <option name="myPythonConsoleState">
@@ -100,63 +99,31 @@
       <workItem from="1582625254573" duration="8981000" />
       <workItem from="1582811842700" duration="808000" />
       <workItem from="1582875902842" duration="18247000" />
+      <workItem from="1591709532140" duration="447000" />
+      <workItem from="1591709982782" duration="2098000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
-    <option name="version" value="1" />
+    <option name="version" value="2" />
   </component>
   <component name="WindowStateProjectService">
-    <state x="98" y="125" width="1724" height="836" key="DiffContextDialog" timestamp="1582300872633">
-      <screen x="0" y="25" width="1920" height="1030" />
+    <state x="771" y="310" width="424" height="484" key="FileChooserDialogImpl" timestamp="1591710116743">
+      <screen x="67" y="27" width="1853" height="1053" />
     </state>
-    <state x="98" y="125" width="1724" height="836" key="DiffContextDialog/0.25.1920.1030@0.25.1920.1030" timestamp="1582300872633" />
-    <state width="1874" height="271" key="GridCell.Tab.0.bottom" timestamp="1582290791119">
-      <screen x="0" y="25" width="1920" height="1030" />
+    <state x="771" y="310" width="424" height="484" key="FileChooserDialogImpl/67.27.1853.1053@67.27.1853.1053" timestamp="1591710116743" />
+    <state x="482" y="187" key="SettingsEditor" timestamp="1591710742662">
+      <screen x="67" y="27" width="1853" height="1053" />
     </state>
-    <state width="1874" height="271" key="GridCell.Tab.0.bottom/0.25.1920.1030@0.25.1920.1030" timestamp="1582290791119" />
-    <state width="1874" height="271" key="GridCell.Tab.0.center" timestamp="1582290791118">
-      <screen x="0" y="25" width="1920" height="1030" />
+    <state x="482" y="187" key="SettingsEditor/67.27.1853.1053@67.27.1853.1053" timestamp="1591710742662" />
+    <state x="684" y="291" width="618" height="522" key="find.popup" timestamp="1591712080533">
+      <screen x="67" y="27" width="1853" height="1053" />
     </state>
-    <state width="1874" height="271" key="GridCell.Tab.0.center/0.25.1920.1030@0.25.1920.1030" timestamp="1582290791118" />
-    <state width="1874" height="271" key="GridCell.Tab.0.left" timestamp="1582290791118">
-      <screen x="0" y="25" width="1920" height="1030" />
+    <state x="684" y="291" width="618" height="522" key="find.popup/67.27.1853.1053@67.27.1853.1053" timestamp="1591712080533" />
+    <state x="718" y="384" width="540" height="337" key="vcs.readOnlyHandler.ReadOnlyStatusDialog" timestamp="1591709998993">
+      <screen x="67" y="27" width="1853" height="1053" />
     </state>
-    <state width="1874" height="271" key="GridCell.Tab.0.left/0.25.1920.1030@0.25.1920.1030" timestamp="1582290791118" />
-    <state width="1874" height="271" key="GridCell.Tab.0.right" timestamp="1582290791119">
-      <screen x="0" y="25" width="1920" height="1030" />
-    </state>
-    <state width="1874" height="271" key="GridCell.Tab.0.right/0.25.1920.1030@0.25.1920.1030" timestamp="1582290791119" />
-    <state x="24" y="118" width="1869" height="858" key="MergeDialog" timestamp="1582301631906">
-      <screen x="0" y="25" width="1920" height="1030" />
-    </state>
-    <state x="24" y="118" width="1869" height="858" key="MergeDialog/0.25.1920.1030@0.25.1920.1030" timestamp="1582301631906" />
-    <state x="345" y="261" width="904" height="568" key="MultipleFileMergeDialog" timestamp="1582301631911">
-      <screen x="0" y="25" width="1920" height="1030" />
-    </state>
-    <state x="345" y="261" width="904" height="568" key="MultipleFileMergeDialog/0.25.1920.1030@0.25.1920.1030" timestamp="1582301631911" />
-    <state x="153" y="163" width="904" height="735" key="SettingsEditor" timestamp="1582546842798">
-      <screen x="0" y="25" width="1680" height="1000" />
-    </state>
-    <state x="153" y="163" width="904" height="735" key="SettingsEditor/0.25.1680.1000/1680.0.1920.1080@0.25.1680.1000" timestamp="1582546842798" />
-    <state x="175" y="167" width="904" height="757" key="SettingsEditor/0.25.1920.1030@0.25.1920.1030" timestamp="1582300837522" />
-    <state x="329" y="163" width="1022" height="734" key="SettingsEditor/0.25.3600.1000@0.25.3600.1000" timestamp="1582022900898" />
-    <state x="493" y="352" key="com.intellij.ide.util.TipDialog" timestamp="1582875903492">
-      <screen x="0" y="25" width="1920" height="1030" />
-    </state>
-    <state x="431" y="342" key="com.intellij.ide.util.TipDialog/0.25.1680.1000/1680.0.1920.1080@0.25.1680.1000" timestamp="1582613213210" />
-    <state x="493" y="352" key="com.intellij.ide.util.TipDialog/0.25.1920.1030@0.25.1920.1030" timestamp="1582875903492" />
-    <state x="2598" y="263" width="722" height="665" key="find.popup" timestamp="1582899609505">
-      <screen x="0" y="25" width="3840" height="1150" />
-    </state>
-    <state x="532" y="247" width="745" height="578" key="find.popup/0.25.1680.1000/1680.0.1920.1080@0.25.1680.1000" timestamp="1582637060232" />
-    <state x="608" y="254" width="809" height="578" key="find.popup/0.25.1920.1030@0.25.1920.1030" timestamp="1582556680911" />
-    <state x="2598" y="263" width="722" height="665" key="find.popup/0.25.3840.1150@0.25.3840.1150" timestamp="1582899609505" />
-    <state x="1143" y="277" width="1536" height="780" key="search.everywhere.popup" timestamp="1582889222970">
-      <screen x="0" y="25" width="3840" height="1150" />
-    </state>
-    <state x="500" y="244" width="672" height="678" key="search.everywhere.popup/0.25.1680.1000/1680.0.1920.1080@0.25.1680.1000" timestamp="1582550291202" />
-    <state x="1143" y="277" width="1536" height="780" key="search.everywhere.popup/0.25.3840.1150@0.25.3840.1150" timestamp="1582889222970" />
+    <state x="718" y="384" width="540" height="337" key="vcs.readOnlyHandler.ReadOnlyStatusDialog/67.27.1853.1053@67.27.1853.1053" timestamp="1591709998993" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/rrsg_challenge_01$recon.coverage" NAME="recon Coverage Results" MODIFIED="1582290716241" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/python/rrsg_cgreco" />

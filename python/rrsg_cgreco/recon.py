@@ -175,29 +175,28 @@ def read_data(
             else:
                 trajectory = h5_dataset[data_trajectory_key][...]
                 rawdata = h5_dataset[data_rawdata_key][...]
-        else:
+        elif 'brain' in name:
             trajectory = h5_dataset[data_trajectory_key][
                 :, :, ::undersampling_factor]
             rawdata = h5_dataset[data_rawdata_key][
                 :, :, ::undersampling_factor, :]
+        else:
+            print('Unkown data with name ', name)
+
+        # Get the noise scan if available.
         if noise_key in h5_dataset.keys():
             noise_scan = h5_dataset[noise_key][()]
         else:
             noise_scan = None
 
-    # Squeeze dummy dimension and transpose to C-style ordering.
+    # Squeeze dummy dimension and transpose to C(olumn)-style ordering.
     rawdata = np.squeeze(rawdata.T)
 
     # Normalize trajectory to the range of (-1/2)/(1/2)
     norm_trajectory = 2 * np.max(np.abs(trajectory))
 
     # Transpose trajectory to projections/reads/position order
-    trajectory = (
-      np.require(
-        (trajectory / norm_trajectory).T,
-        requirements='C'
-        )
-      )
+    trajectory = np.require((trajectory / norm_trajectory).T, requirements='C')
 
     # Check if rawdata and trajectory dimensions match
     assert trajectory.shape[:-1] == rawdata.shape[-2:], \
