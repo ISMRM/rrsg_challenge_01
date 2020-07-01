@@ -1,0 +1,7 @@
+cython
+numpy
+h5py
+mako
+matplotlib
+pyfftw
+scipy

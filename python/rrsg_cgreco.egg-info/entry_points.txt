@@ -1,0 +1,3 @@
+[console_scripts]
+rrsg_cgreco = rrsg_cgreco.recon:run
+
