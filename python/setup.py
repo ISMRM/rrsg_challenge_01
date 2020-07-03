@@ -16,6 +16,7 @@ setup(name='rrsg_cgreco',
         'mako',
         'matplotlib',
 	'pyfftw',
+        'skimage',
 	'scipy'],
       entry_points={
         'console_scripts': ['rrsg_cgreco = rrsg_cgreco.recon:run'],
