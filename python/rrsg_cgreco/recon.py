@@ -472,7 +472,7 @@ def _decor_noise(data, noise, par, coils=None):
             The corresponding coil sensitivities, if provided.
     """
     if noise is None:
-        return data
+        return data, coils
     else:
         print("Performing noise decorrelation...")
         if not np.allclose(noise.shape, par["num_coils"]):
@@ -493,7 +493,7 @@ def _decor_noise(data, noise, par, coils=None):
             coils = invL@coils
             coils = np.reshape(coils,
                                coilshape)
-        return (data, coils)
+        return data, coils
     
 def save_coil_(pathtofile, undersampling_factor, par):
     name = os.path.normpath(pathtofile)
