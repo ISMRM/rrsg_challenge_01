@@ -2,16 +2,16 @@
 
 %% Load Data
 % Put in folder containing the h5 files, i.e.
-pathData = 'rrsg_challenge_01/data/Spiral';
+pathData = '../../../data_RRSG/Spiral';
 data = loadData(pathData);
-
+% data.Nimg = 240;
 %% Set up properties
 properties.image_dim                    = data.Nimg;    % Number of voxels (assumes quadratic images)
 properties.gridding.oversampling_factor = 2;            % Gridding oversampling factor
-properties.gridding.kernel_width        = 2;            % Gridding kernel width as a multiple of dk without oversampling
+properties.gridding.kernel_width        = 4;            % Gridding kernel width as a multiple of dk without oversampling
 properties.do_sense_recon               = 1;            % 1 = Perform recon with SENSE maps; 0 = No sense maps used; basically iterative gridding+FFT (density-compensation)
-properties.undersampling_factor         = 3;            % undersampling or acceleration factor (R), determines how fraction (1/R) of full data is used in reconstruction
-properties.n_iterations                 = 8;            % Number of CG iterations
+properties.undersampling_factor         = 1;            % undersampling or acceleration factor (R), determines how fraction (1/R) of full data is used in reconstruction
+properties.n_iterations                 = 10;            % Number of CG iterations
 % Visualization level:
 % 0 = none; 
 % 1 = Plot current image after each CG iteration? 
@@ -29,3 +29,13 @@ fh = figure('Name', 'demoRecon: Iteration Results');
 subplot(1,3,1); imagesc(abs(out.imagesIterSteps{1})); colormap(gray); axis image; axis off; ylabel('R=1'); title('iteration 0');
 subplot(1,3,2); imagesc(abs(out.imagesIterSteps{nItHalf})); colormap(gray); axis image; axis off; title(sprintf('iteration %d', nItHalf));
 subplot(1,3,3); imagesc(abs(out.imagesIterSteps{nIt})); colormap(gray); axis image; axis off; title(sprintf('iteration %d', nIt));
+
+%% Single Coil
+dataTmp = data;
+properties.n_iterations = 1;
+properties.do_sense_recon = 0;
+dataTmp.sense.data = data.sense.data(:,:,1);
+dataTmp.sense.noiseCovarianceMatrix = 1; % ignore noise covariance
+dataTmp.signal = data.signal(:,:,1);
+dataTmp.nCoils = 1;
+outSingle = CGSense(dataTmp, properties);

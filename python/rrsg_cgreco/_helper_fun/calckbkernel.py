@@ -42,7 +42,7 @@ def calculate_keiser_bessel_kernel(
     Args
     ----
         kernelwidth (int):
-            kernel width in grid samples.
+            kernel width
         overgridfactor (float):
             over-gridding factor.
         gridsize (int):
@@ -59,7 +59,7 @@ def calculate_keiser_bessel_kernel(
             normalized Fourier transform of kernel used for deapodization
         kbu:
             position of sampling points of kernel.
-            linspace from 0 to length of kernel in grid units
+            linspace from 0 to length of kernel
 
     """
     if kernellength < 2:
@@ -76,36 +76,25 @@ def calculate_keiser_bessel_kernel(
         * (overgridfactor - 0.5) ** 2 
         - 0.8
         )
-
-    # Kernel radii - grid samples.
-    u = (
-        np.linspace(
-            0,
-            np.floor(
-                kernellength * kernelwidth / 2
-                ),
-            int(
-                np.ceil(
-                    kernellength * kernelwidth / 2
-                    )
-                )
-            ) /
-        (
-            np.floor(
-                kernellength * kernelwidth / 2
-                )
-            )
-        * kernelwidth / 2 / gridsize
-        )
+    # Kernel radii.
+    u = np.linspace(
+        0, 
+        (kernelwidth/2), 
+        int(np.ceil(kernellength*kernelwidth/2)))
 
     kern = kaiser_bessel(u, kernelwidth, beta, gridsize)
     kern = kern / kern[u == 0]  # Normalize.
-     
+
     ft_y = np.flip(kern)
-    ft_y = np.concatenate((ft_y[:-1], kern))
+    if np.mod(kernelwidth, 2):
+        ft_y = np.concatenate((ft_y[:-1], kern))
+    else:
+        ft_y = np.concatenate((ft_y, kern))
+    
     ft_y = np.pad(
         ft_y, 
-        int((gridsize * kernellength - ft_y.size) / 2),
+        (int(np.floor((gridsize * kernellength - ft_y.size) / 2)),
+         int(np.ceil((gridsize * kernellength - ft_y.size) / 2))),
         'constant'
         )
     ft_y = np.abs(
@@ -118,13 +107,14 @@ def calculate_keiser_bessel_kernel(
           )
       * ft_y.size
       )
+
     x = np.linspace(
-        -int(gridsize/(2*overgridfactor)), 
-        int(gridsize/(2*overgridfactor))-1, 
-        int(gridsize/(overgridfactor))
+        -int(np.floor(gridsize/(2*overgridfactor))), 
+        int(np.floor(gridsize/(2*overgridfactor)))-1, 
+        int(np.floor(gridsize/(overgridfactor)))
         )
 
-    ft_y = ft_y[(ft_y.size / 2 - x).astype(int)]
+    ft_y = ft_y[(ft_y.size / 2 + x).astype(int)]
     h = np.sinc(x / (gridsize * kernellength)) ** 2
 
     kern_ft = ft_y * h

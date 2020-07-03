@@ -18,7 +18,7 @@ function fh = createFigure5(data, pathResults)
 %                    University of Zurich and ETH Zurich
 %
 %
-iCoil = 7;
+iCoil = 1;
 
 stringTitle = sprintf('Figure 5 Reproduction - Undersampled Recons Arbitrary SENSE');
 fh(1) = figure('Name', [stringTitle, ' - part 1']);
@@ -28,8 +28,9 @@ RArray = [1 2 3 4];
 nR = numel(RArray);
 dataIn = data;
 
+data.Nimg = 300;
 properties.image_dim = data.Nimg;             % For the phantom it should be 152, 340 for brain, 360 for heart
-properties.gridding.oversampling_factor = 2;  % Gridding oversampling factor
+properties.gridding.oversampling_factor = 1.7033398310591292;  % Gridding oversampling factor
 properties.gridding.kernel_width = 4;         % Gridding kernel width as a multiple of dk without oversampling
 properties.visualization_level = 1;
 
@@ -42,7 +43,7 @@ for iR = 1:nR
     properties.undersampling_factor = iR;          % Undersampling factor (positive integer)
     
     % SENSE reconstruction
-    properties.n_iterations = 4;
+    properties.n_iterations = 10;
     properties.do_sense_recon = 1;
     out = CGSense(dataTmp, properties);
     outSense{iR} = out;
@@ -58,7 +59,7 @@ for iR = 1:nR
     out = CGSense(dataTmp, properties);
     outSingle{iR} = out;
 end
-
+save('result_brain.mat','outSingle','outSense');
 %% Create Subplots for figure
 bestIteration = [5 5 5 5];
 for iR = 1:nR

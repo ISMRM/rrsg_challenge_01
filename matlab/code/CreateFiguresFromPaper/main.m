@@ -5,8 +5,8 @@
 
 %% Setup Data and Results paths
 % NOTE: Adapt data paths to folder containing the h5 files
-pathDataBrain   = 'rrsg_challenge_01/data/Brain';
-pathDataHeart   = 'rrsg_challenge_01/data/Heart';
+pathDataBrain   = '../../../../data_RRSG/Brain';
+pathDataHeart   = '../../../../data_RRSG/Heart';
 pathResults     = 'results'; % path where results figures shall be stored
 
 % create path for results
@@ -14,7 +14,7 @@ pathResults     = 'results'; % path where results figures shall be stored
 
 %% Create Figure 4 (brain data)
 dataBrain                           = loadData(pathDataBrain);
-[Deltas, deltas, durationIterSteps] = createFigure4(dataBrain, pathResults);
+% [Deltas, deltas, durationIterSteps] = createFigure4(dataBrain, pathResults);
 
 %% Create Figure 5 (brain data)
 createFigure5(dataBrain, pathResults);

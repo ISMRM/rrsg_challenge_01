@@ -22,8 +22,10 @@ class Operator(ABC):
     ----------
         num_coils (int):
             Number of complex coils
-        image_dim (int):
+        image_dimension (int):
             Dimension of the parameter maps. Assumed to be square
+        grid_size (int):
+            Size of oversampled grid
         num_reads (int):
             Number of samples per readout
         num_proj (int):
@@ -43,7 +45,7 @@ class Operator(ABC):
             data_par (dict):
                 A python dict containing the necessary information to
                 setup the object. Needs to contain the image dimensions 
-                (image_dim),
+                (image_dimension),
                 number of coils (num_coils),
                 sampling points (num_reads) and read outs (num_proj).
                 (Optional) content of the data_par (dict) is the DTYPE and
@@ -51,7 +53,8 @@ class Operator(ABC):
                 np.complex64 and np.float32 respectively.
         """
         # Test whether the given dictionary contains the desired keys
-        necessary_keys = ['image_dim', 'num_coils', 'num_reads', 'num_proj']
+        necessary_keys = ['image_dimension', 'num_coils', 
+                          'num_reads', 'num_proj']
         necessary_test = [x in data_par for x in necessary_keys]
         if not all(necessary_test):
             false_index = [i for i, x in 
@@ -59,7 +62,8 @@ class Operator(ABC):
             missing_keys = [necessary_keys[i] for i in false_index]
             raise ValueError('Missing keys ', missing_keys)
 
-        self.image_dim = data_par["image_dim"]
+        self.image_dim = data_par["image_dimension"]
+        self.grid_size = data_par["grid_size"]
         self.num_reads = data_par["num_reads"]
         self.num_coils = data_par["num_coils"]
         self.num_proj = data_par["num_proj"]
@@ -182,7 +186,7 @@ class NUFFT(Operator):
         (self.kerneltable, kerneltable_FT, u) = calculate_keiser_bessel_kernel(
             par["FFT"]["kernelwidth"],
             self.overgridfactor,
-            par["Data"]["num_reads"],
+            par["Data"]["grid_size"],
             par["FFT"]["kernellength"])
 
         deapodization = 1 / kerneltable_FT.astype(self.DTYPE_real)
@@ -198,8 +202,7 @@ class NUFFT(Operator):
         self.trajectory = trajectory
 
         self.n_kernel_points = self.kerneltable.size
-        self.grid_size = par["Data"]["num_reads"]
-        self.kwidth = (par["FFT"]["kernelwidth"] / 2) / self.grid_size
+        self.kwidth = (par["FFT"]["kernelwidth"] / 2)
         self.fft_dim = fft_dim
         if "gridding_matrix" in par["FFT"].keys():
             self.gridding_mat = par["FFT"]["gridding_matrix"]
@@ -217,9 +220,12 @@ class NUFFT(Operator):
         compensate for the convolution of the gridding kernel on the data.
 
         Args:
-            inp:
+            inp (Numpy.Array):
+                The input data do be transformed
 
         Returns:
+            Numpy.Array
+                The resulting image from non-uniform data
 
         """
         # Perform density compensation
@@ -238,6 +244,7 @@ class NUFFT(Operator):
         ogkspace = np.fft.ifftshift(ogkspace, axes=self.fft_dim)
         ogkspace = np.fft.ifft2(ogkspace, norm='ortho')
         ogkspace = np.fft.ifftshift(ogkspace, axes=self.fft_dim)
+
         # Deapodization and Scaling
         return self._deapo_adj(ogkspace)
 
@@ -250,9 +257,12 @@ class NUFFT(Operator):
         finally resampling of the cartesian data to the non-uniform trajectory.
 
         Args:
-            inp:
+            inp (Numpy.Array):
+                The image to be transformed to the non-uniform k-space
 
         Returns:
+            Numpy.Array:
+                The non-uniform k-space derived from inp
 
         """
         # Deapodization and Scaling
@@ -287,6 +297,7 @@ class NUFFT(Operator):
             ] * self.deapodization
 
     def _deapo_fwd(self, inp):
+          
         gridcenter = self.grid_size / 2
 
         out = np.zeros(
@@ -328,19 +339,19 @@ class NUFFT(Operator):
             temp_mapping = []  # Here for demonstration purposes.
             temp_mapping.append((iread, iproj))
 
-            kx = self.trajectory[iproj, iread, 1]
-            ky = self.trajectory[iproj, iread, 0]
+            kx = self.trajectory[iproj, iread, 1]*self.overgridfactor
+            ky = self.trajectory[iproj, iread, 0]*self.overgridfactor
 
-            ixmin = int((kx - self.kwidth) * self.grid_size + gridcenter)
-            ixmax = int((kx + self.kwidth) * self.grid_size + gridcenter) + 1
-            iymin = int((ky - self.kwidth) * self.grid_size + gridcenter)
-            iymax = int((ky + self.kwidth) * self.grid_size + gridcenter) + 1
+            ixmin = int((kx - self.kwidth) + gridcenter)
+            ixmax = int((kx + self.kwidth) + gridcenter) + 1
+            iymin = int((ky - self.kwidth) + gridcenter)
+            iymax = int((ky + self.kwidth) + gridcenter) + 1
 
             for gcount1 in np.arange(ixmin, ixmax+1):
-                dkx = (gcount1 - gridcenter) / self.grid_size - kx
+                dkx = (gcount1 - gridcenter) - kx
 
                 for gcount2 in np.arange(iymin, iymax+1):
-                    dky = (gcount2 - gridcenter) / self.grid_size - ky
+                    dky = (gcount2 - gridcenter) - ky
                     dk = np.sqrt(dkx ** 2 + dky ** 2)
 
                     if dk < self.kwidth:
@@ -407,19 +418,19 @@ class NUFFT(Operator):
                 range(self.num_reads)
                 ):
 
-            kx = self.trajectory[iproj, ismpl, 1]
-            ky = self.trajectory[iproj, ismpl, 0]
+            kx = self.trajectory[iproj, ismpl, 1]*self.overgridfactor
+            ky = self.trajectory[iproj, ismpl, 0]*self.overgridfactor
 
-            ixmin = int((kx - self.kwidth) * self.grid_size + gridcenter)
-            ixmax = int((kx + self.kwidth) * self.grid_size + gridcenter) + 1
-            iymin = int((ky - self.kwidth) * self.grid_size + gridcenter)
-            iymax = int((ky + self.kwidth) * self.grid_size + gridcenter) + 1
+            ixmin = int((kx - self.kwidth) + gridcenter)
+            ixmax = int((kx + self.kwidth) + gridcenter) + 1
+            iymin = int((ky - self.kwidth) + gridcenter)
+            iymax = int((ky + self.kwidth) + gridcenter) + 1
 
             for gcount1 in np.arange(ixmin, ixmax+1):
-                dkx = (gcount1 - gridcenter) / self.grid_size - kx
+                dkx = (gcount1 - gridcenter) - kx
 
                 for gcount2 in np.arange(iymin, iymax+1):
-                    dky = (gcount2 - gridcenter) / self.grid_size - ky
+                    dky = (gcount2 - gridcenter) - ky
                     dk = np.sqrt(dkx ** 2 + dky ** 2)
                     if dk < self.kwidth:
 
@@ -465,30 +476,30 @@ class NUFFT(Operator):
                     range(self.num_reads)
                     ):
     
-                kx = self.trajectory[iproj, ismpl, 1]
-                ky = self.trajectory[iproj, ismpl, 0]
+                kx = self.trajectory[iproj, ismpl, 1]*self.overgridfactor
+                ky = self.trajectory[iproj, ismpl, 0]*self.overgridfactor
     
                 ixmin = int(
                     (kx - self.kwidth) 
-                    * self.grid_size + gridcenter
+                    + gridcenter
                     )
                 ixmax = int(
                     (kx + self.kwidth) 
-                    * self.grid_size + gridcenter
+                    + gridcenter
                     ) + 1
                 iymin = int(
                     (ky - self.kwidth) 
-                    * self.grid_size + gridcenter
+                    + gridcenter
                     )
                 iymax = int(
                     (ky + self.kwidth) 
-                    * self.grid_size + gridcenter
+                    + gridcenter
                     ) + 1
 
                 for gcount1 in np.arange(ixmin, ixmax+1):
-                    dkx = (gcount1 - gridcenter) / self.grid_size - kx
+                    dkx = (gcount1 - gridcenter)- kx
                     for gcount2 in np.arange(iymin, iymax+1):
-                        dky = (gcount2 - gridcenter) / self.grid_size - ky
+                        dky = (gcount2 - gridcenter) - ky
                         dk = np.sqrt(dkx ** 2 + dky ** 2)
                         if dk < self.kwidth:
                             fracind = (dk / self.kwidth 

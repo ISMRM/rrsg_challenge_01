@@ -60,7 +60,7 @@ class CGReco:
         operator (linop.Operator):
             MRI imaging operator to traverse from k-space to imagespace and
             vice versa.
-            
+
     """
 
     def __init__(self, data_par, optimizer_par):
@@ -71,7 +71,7 @@ class CGReco:
         ----
             data_par (dict):
                 A python dict containing the necessary information to
-                setup the object. Needs to contain the image dimensions 
+                setup the object. Needs to contain the image dimensions
                 (img_dim), number of coils (num_coils),
                 sampling points (num_reads) and read outs (num_proj) and the
                 complex coil sensitivities (Coils).
@@ -79,22 +79,21 @@ class CGReco:
                 Parameter containing the optimization related settings.
 
         """
-        self.image_dim = data_par["image_dim"]
+        self.image_dim = data_par["image_dimension"]
         self.num_coils = data_par["num_coils"]
+        self.mask = data_par["mask"]
 
         self.DTYPE = data_par["DTYPE"]
         self.DTYPE_real = data_par["DTYPE_real"]
 
         self.do_incor = data_par["do_intensity_scale"]
         self.incor = data_par["in_scale"].astype(self.DTYPE)
-        
-        self.maxit=optimizer_par["max_iter"]
-        self.lambd=optimizer_par["lambda"]
-        self.tol=optimizer_par["tolerance"]
+        self.maxit = optimizer_par["max_iter"]
+        self.lambd = optimizer_par["lambda"]
+        self.tol = optimizer_par["tolerance"]
 
         self.res = []
         self.operator = None
-        
 
     def set_operator(self, op):
         """
@@ -155,9 +154,9 @@ class CGReco:
 
     def kspace_filter(self, x):
         """
-        Performs k-space filtering.
+        Perform k-space filtering.
 
-        This function filters out k-space points outside the acquired 
+        This function filters out k-space points outside the acquired
         trajectory, setting the corresponding k-space position to 0.
 
         Args
@@ -170,20 +169,20 @@ class CGReco:
             numpy.Array: Filtered image-space data.
         """
         print("Performing k-space filtering")
-        kpoints = (np.arange(-np.floor(self.operator.num_reads/2),
-                            np.ceil(self.operator.num_reads/2))
-                   )/self.operator.num_reads
-        xx, yy = np.meshgrid(kpoints,kpoints)
+        kpoints = (np.arange(-np.floor(self.operator.grid_size/2),
+                             np.ceil(self.operator.grid_size/2))
+                   )/self.operator.grid_size
+        xx, yy = np.meshgrid(kpoints, kpoints)
         gridmask = np.sqrt(xx**2+yy**2)
-        gridmask[np.abs(gridmask)>0.5] = 1
-        gridmask[gridmask<1] = 0
+        gridmask[np.abs(gridmask) > 0.5] = 1
+        gridmask[gridmask < 1] = 0
         gridmask = ~gridmask.astype(bool)
-        gridcenter = self.operator.num_reads / 2
+        gridcenter = self.operator.grid_size / 2
         for j in range(x.shape[0]):
             tmp = np.zeros(
                 (
-                    self.operator.num_reads,
-                    self.operator.num_reads),
+                    self.operator.grid_size,
+                    self.operator.grid_size),
                 dtype=self.operator.DTYPE
                 )
 
@@ -265,7 +264,7 @@ class CGReco:
         print("Elapsed time: %f seconds" % (end))
         print("-"*80)
         if self.do_incor:
-            result *= self.incor
+            result = self.mask*result/self.incor
         return (self.kspace_filter(result), self.res)
 
 ###############################################################################
@@ -333,7 +332,8 @@ class CGReco:
             delta = np.linalg.norm(residual_new) ** 2 / np.linalg.norm(b) ** 2
             self.res.append(delta)
             if delta < tol:
-                print("\nConverged after %i iterations to %1.3e." % (i+1, delta))
+                print("\nConverged after %i iterations to %1.3e." %
+                      (i+1, delta))
                 return x[:i+1, ...]
             if not np.mod(i, 1):
                 print("Residuum at iter %i : %1.3e" % (i+1, delta), end='\r')

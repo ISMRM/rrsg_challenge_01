@@ -20,11 +20,12 @@ trajectory  = h5read(datafile,'/trajectory');
 k           = trajectory;
 % Norm k to range from -0.5 to +0.5
 k_scaled        = zeros(size(k));
-range           = max(reshape(k, [], 2))-min(reshape(k, [], 2));
-k_scaled(:,:,1) = k(:,:,1)/range(1);
-k_scaled(:,:,2) = k(:,:,2)/range(2);
-k_scaled(:,:,1) = k_scaled(:,:,1) - min(min(k_scaled(:,:,1))) - 0.5;
-k_scaled(:,:,2) = k_scaled(:,:,2) - min(min(k_scaled(:,:,2))) - 0.5;
+range           = max(reshape(k, [], 2))-min(reshape(k, [], 2)); % -> changes sampling!!!
+range           = 2 * max(abs(k(:)));
+k_scaled(:,:,1) = k(:,:,1)/range;
+k_scaled(:,:,2) = k(:,:,2)/range;
+% k_scaled(:,:,1) = k_scaled(:,:,1) - min(min(k_scaled(:,:,1))) - 0.5;
+% k_scaled(:,:,2) = k_scaled(:,:,2) - min(min(k_scaled(:,:,2))) - 0.5;
 
 % Load image resolution from h5 file as well, otherwise resolution of SENSE
 % maps is used as recon size

@@ -45,9 +45,9 @@ def kaiser_bessel(u, width, beta, gridisze):
     Args
     ----
       u (numpy.array):
-        Kernel Radii in per-grid-samples
+        Kernel Radii
       width (int):
-        Kernel width in per-grid-samples
+        Kernel width
       beta (float):
         Scale for the argument of the modified bessel function of oder 0,
         see Jackson '91 and Beatty et al.
@@ -57,16 +57,16 @@ def kaiser_bessel(u, width, beta, gridisze):
     Returns
     -------
       numpy.array
-        Ramp for golden angle density compensation
+        The Kaiser-Bessel window
     """
     assert np.size(width) == 1, 'width should be a single scalar value.'
 
     y = np.zeros_like(u)  # Allocate space.
-    uz = np.where(np.abs(u) <= width / (2 * gridisze))  # Indices where u<w/2.
+    # uz = np.where(np.abs(u) <= width / (2))  # Indices where u<w/2.
 
-    if np.size(uz) > 0:  # Calculate y at indices uz.
-        x = beta * np.sqrt(1 - (2 * u[uz] * gridisze / width) ** 2)
-        # Argument - see Jackson '91.
-        y[uz] = gridisze * i0(x) / width
+    # if np.size(uz) > 0:  # Calculate y at indices uz.
+    x = beta * np.sqrt(1 - (2 * u / width) ** 2)
+    # Argument - see Jackson '91.
+    y = i0(x) / width
 
     return y

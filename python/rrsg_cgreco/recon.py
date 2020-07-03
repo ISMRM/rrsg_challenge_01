@@ -31,6 +31,7 @@ from rrsg_cgreco._helper_fun.density_compensation \
 from rrsg_cgreco._helper_fun.est_coils import estimate_coil_sensitivities
 import rrsg_cgreco.linop as linop
 import rrsg_cgreco.solver as solver
+import errno
 
 DTYPE = np.complex64
 DTYPE_real = np.float32
@@ -158,7 +159,13 @@ def read_data(
              If no data file is specified
     """
     if not os.path.isfile(pathtofile):
-        raise ValueError("Given path does not point to an existing file.")
+        err = FileNotFoundError(
+            errno.ENOENT, 
+            os.strerror(errno.ENOENT),
+            pathtofile)
+        raise FileNotFoundError(
+            "Given path does not point to an existing file:\n{0}".format(
+            err))
 
     name = os.path.normpath(pathtofile)
     with h5py.File(name, 'r') as h5_dataset:
@@ -175,41 +182,61 @@ def read_data(
             else:
                 trajectory = h5_dataset[data_trajectory_key][...]
                 rawdata = h5_dataset[data_rawdata_key][...]
-        elif 'brain' in name:
+        else:
             trajectory = h5_dataset[data_trajectory_key][
                 :, :, ::undersampling_factor]
             rawdata = h5_dataset[data_rawdata_key][
                 :, :, ::undersampling_factor, :]
-        else:
-            print('Unkown data with name ', name)
-
-        # Get the noise scan if available.
         if noise_key in h5_dataset.keys():
             noise_scan = h5_dataset[noise_key][()]
         else:
             noise_scan = None
+        if "Coils" in h5_dataset.keys():
+            Coils = h5_dataset["Coils"][()]
+        else:
+            Coils = None
+        if "mask" in h5_dataset.keys():
+            mask = h5_dataset["mask"][()]
+        else:
+            mask = 1
 
-    # Squeeze dummy dimension and transpose to C(olumn)-style ordering.
+    # Squeeze dummy dimension and transpose to C-style ordering.
     rawdata = np.squeeze(rawdata.T)
 
     # Normalize trajectory to the range of (-1/2)/(1/2)
-    norm_trajectory = 2 * np.max(np.abs(trajectory))
+    image_dim = int(np.ceil(2 * np.max(np.abs(trajectory))))
+    overgrid_factor_a = 1/np.linalg.norm(trajectory[:,-2,0]-trajectory[:,-1,0])
+    overgrid_factor_b = 1/np.linalg.norm(trajectory[:,0,0]-trajectory[:,1,0])
+
+    data_par = {}
+    data_par["overgridfactor"] = np.min((overgrid_factor_a,
+                                         overgrid_factor_b))
+    data_par["image_dimension"] = image_dim
+    data_par["mask"] = mask
 
     # Transpose trajectory to projections/reads/position order
-    trajectory = np.require((trajectory / norm_trajectory).T, requirements='C')
-
+    trajectory = (
+      np.require(
+        (trajectory).T,
+        requirements='C'
+        )
+      )
     # Check if rawdata and trajectory dimensions match
     assert trajectory.shape[:-1] == rawdata.shape[-2:], \
         "Rawdata and trajectory should have the same number "\
         "of read/projection pairs."
+        
+    if image_dim < 10:
+        image_dim = None
 
-    return rawdata, trajectory, noise_scan
+    return rawdata, trajectory, noise_scan, data_par, Coils
 
 
 def setup_parameter_dict(
       configfile,
       rawdata,
-      trajectory
+      trajectory,
+      data_par=None
       ):
     """
     Parameter dict generation.
@@ -226,6 +253,9 @@ def setup_parameter_dict(
             The raw k-space data
         trajectory (np.array):
             The associated trajectory data
+        data_par (dcit):
+            The image grid dimension and 
+            overgrid factor, dervied from the trajectory
 
     Returns
     -------
@@ -237,10 +267,16 @@ def setup_parameter_dict(
     parameter = {}
     config = configparser.ConfigParser()
     ext = os.path.splitext(configfile)[-1]
-    if ext != "txt":
-        configfile = configfile + '.txt'
-
-    config.read(configfile)
+    if ext != ".txt":
+        configfile = configfile + '.txt' 
+    try:
+        config.read_file(open(configfile))
+        config.read(configfile)
+    except FileNotFoundError as err:
+        raise FileNotFoundError(
+            "Given Path doesn't point to an existing config file:\n{0}".format(
+                err))
+    
     for section_key in config.sections():
         parameter[section_key] = {}
         for value_key in config[section_key].keys():
@@ -267,7 +303,7 @@ def setup_parameter_dict(
                         parameter[section_key][value_key] = config.get(
                             section_key,
                             value_key)
-
+    parameter["Data"] = {**parameter["Data"], **data_par}
     if parameter["Data"]["precision"].lower() == "single":
         parameter["Data"]["DTYPE"] = np.complex64
         parameter["Data"]["DTYPE_real"] = np.float32
@@ -278,13 +314,13 @@ def setup_parameter_dict(
         raise ValueError("precision needs to be set to single or double.")
     
     [n_ch, n_spokes, num_reads] = rawdata.shape
-
+        
     parameter["Data"]["num_coils"] = n_ch
-    parameter["Data"]["image_dim"] = int(
-        num_reads/parameter["Data"]["overgridfactor"]
-        )
     parameter["Data"]["num_reads"] = num_reads
     parameter["Data"]["num_proj"] = n_spokes
+    parameter["Data"]["grid_size"] = int(np.ceil(
+        parameter["Data"]["image_dimension"] * 
+        parameter["Data"]["overgridfactor"]))
     
     # Calculate density compensation for non-cartesian data.
     if parameter["Data"]["do_density_correction"]:
@@ -333,14 +369,17 @@ def compute_density_compensation(parameter, trajectory):
         
         # Check intensity scaling of a dirac function - should be 1
         # Perform normalization to one and add it to the density compensation
-        image_dirac = np.zeros((parameter["Data"]["image_dim"],
-                                parameter["Data"]["image_dim"]),
-                               dtype=parameter["Data"]["DTYPE"])
-        image_dirac[int(parameter["Data"]["image_dim"]/2), 
-                    int(parameter["Data"]["image_dim"]/2)] = 1
+        image_dirac = np.zeros((parameter["Data"]["image_dimension"],
+                                parameter["Data"]["image_dimension"]),
+                                dtype=parameter["Data"]["DTYPE"])
+        image_dirac[int(parameter["Data"]["image_dimension"]/2), 
+                    int(parameter["Data"]["image_dimension"]/2)] = (
+                        1+1j
+                        )/np.sqrt(2)
         impulse_response = FFT.adjoint(FFT.forward(image_dirac))
-        scale = impulse_response[0, int(parameter["Data"]["image_dim"]/2), 
-                                 int(parameter["Data"]["image_dim"]/2)]
+        scale = impulse_response[0,
+                                  int(parameter["Data"]["image_dimension"]/2), 
+                                  int(parameter["Data"]["image_dimension"]/2)]
         parameter["FFT"]["dens_cor"] *= (
             1/np.sqrt(np.abs(scale))
             ).astype(parameter["Data"]["DTYPE_real"])
@@ -407,7 +446,7 @@ def save_to_file(
     os.chdir(cwd)
 
 
-def _decor_noise(data, noise, par):
+def _decor_noise(data, noise, par, coils=None):
     """
     Decorrelate the data with using a given noise covariance matrix
     
@@ -422,17 +461,24 @@ def _decor_noise(data, noise, par):
         The complex noise covariance data.
       par (dict):
         The data parameter dict.
+      coils (np.complex64):
+        The optional complex coil sensitivity data.
         
     Returns
     -------
         data (np.complex64):
             The prewithened k-space data
+          coils (np.complex64):
+            The corresponding coil sensitivities, if provided.
     """
     if noise is None:
         return data
     else:
         print("Performing noise decorrelation...")
-        cov = np.cov(noise)
+        if not np.allclose(noise.shape, par["num_coils"]):
+            cov = np.cov(np.reshape(noise, (par["num_coils"], -1)))
+        else:
+            cov = noise
         L = np.linalg.cholesky(cov)
         invL = np.linalg.inv(L)
         data = np.reshape(data, (par["num_coils"], -1))
@@ -441,12 +487,29 @@ def _decor_noise(data, noise, par):
                           (par["num_coils"],
                            par["num_proj"],
                            par["num_reads"]))
-        return data
+        if coils is not None:
+            coilshape = coils.shape
+            coils = np.reshape(coils, (par["num_coils"], -1))
+            coils = invL@coils
+            coils = np.reshape(coils,
+                               coilshape)
+        return (data, coils)
+    
+def save_coil_(pathtofile, undersampling_factor, par):
+    name = os.path.normpath(pathtofile)
+    with h5py.File(name, 'r+') as h5_dataset:
+        if (undersampling_factor != 1) and ("Coils" not in h5_dataset.keys()):
+            raise ValueError("Coils should be estimated without undersampling!")
+        elif "Coils" in h5_dataset.keys():
+            pass  
+        else:
+            h5_dataset["Coils"] = par["coils"]
+            h5_dataset["mask"] = par["mask"]
 
 
 def _run_reco(args):
     # Read input data
-    kspace_data, trajectory, noise = read_data(
+    kspace_data, trajectory, noise, data_par, coils = read_data(
         pathtofile=args.pathtofile, 
         undersampling_factor=args.undersampling_factor
         )
@@ -454,19 +517,28 @@ def _run_reco(args):
     parameter = setup_parameter_dict(
         args.configfile,
         rawdata=kspace_data, 
-        trajectory=trajectory)
+        trajectory=trajectory,
+        data_par=data_par)
 
     # Decorrelate Coil channels if noise scan is present
-    kspace_data = _decor_noise(
+    kspace_data, coils = _decor_noise(
         data=kspace_data,
         noise=noise,
-        par=parameter["Data"])
+        par=parameter["Data"],
+        coils=coils)
 
     # Get coil sensitivities in the parameter dict
     estimate_coil_sensitivities(
         kspace_data, 
         trajectory, 
-        parameter)
+        parameter,
+        coils=coils)
+    # Save SoS coils if not present
+    save_coil_(
+        pathtofile=args.pathtofile, 
+        undersampling_factor=args.undersampling_factor,
+        par=parameter["Data"]
+        )
 
     # Get operator
     MRImagingOperator = linop.MRIImagingModel(parameter, trajectory)

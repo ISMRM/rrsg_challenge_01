@@ -25,12 +25,15 @@ import numpy as np
 import sys
 from rrsg_cgreco._helper_fun import nlinvns
 from rrsg_cgreco import linop
+import skimage.filters
+from scipy.ndimage.morphology import binary_dilation as dilate
 
 # Estimates sensitivities and complex image.
 # (see Martin Uecker: Image reconstruction by regularized nonlinear
 # inversion joint estimation of coil sensitivities and image content)
 
-def estimate_coil_sensitivities(data, trajectory, par, NLINV=False):
+def estimate_coil_sensitivities(data, trajectory, par, 
+                                coils=None, NLINV=False):
     """
       Estimate complex coil sensitivities.
 
@@ -40,6 +43,8 @@ def estimate_coil_sensitivities(data, trajectory, par, NLINV=False):
 
     Args
     ----
+          coils (numpy.array):
+              Complex coil sensitivites, possibly read from File
           data (numpy.array):
               complex k-space data
           trajectory (numpy.array):
@@ -54,10 +59,29 @@ def estimate_coil_sensitivities(data, trajectory, par, NLINV=False):
               Switch between NLINV or sum-of-squares based coil estimation.
               Defaults to sum-of-squares (NLINV=False).
     """
-    if NLINV:
-        estimate_coil_sensitivities_NLINV(data, trajectory, par)
-    else:
-        estimate_coil_sensitivities_SOS(data, trajectory, par)
+    if coils is not None:
+        print("Using supplied coil sensitivity profiles...")
+        par["Data"]["coils"] = coils
+        par["Data"]["phase_map"] = np.zeros(
+            (par["Data"]["image_dimension"],
+             par["Data"]["image_dimension"]), 
+            dtype=par["Data"]["DTYPE"])
+        cropfov = slice(int(par["Data"]["coils"].shape[-2]/2
+                            -par["Data"]["image_dimension"]/2),
+                        int(par["Data"]["coils"].shape[-1]/2
+                            +par["Data"]["image_dimension"]/2))
+        par["Data"]["coils"] = np.squeeze(
+            par["Data"]["coils"][..., cropfov, cropfov])
+        if type(par["Data"]["mask"]) is np.ndarray:
+            par["Data"]["mask"] = np.squeeze(
+            par["Data"]["mask"][cropfov, cropfov])
+            
+        _norm_coils(par)
+    else:    
+        if NLINV:
+            estimate_coil_sensitivities_NLINV(data, trajectory, par)
+        else:
+            estimate_coil_sensitivities_SOS(data, trajectory, par)
         
         
 def estimate_coil_sensitivities_SOS(data, trajectory, par):   
@@ -82,21 +106,15 @@ def estimate_coil_sensitivities_SOS(data, trajectory, par):
               image dimensions (dimX, dimY), number of coils (num_coils),
               sampling pos (num_reads) and read outs (num_proj).
     """
-    par["Data"]["coils"] = np.zeros(
-        (par["Data"]["num_coils"], 
-         par["Data"]["image_dim"], 
-         par["Data"]["image_dim"]), 
-        dtype=par["Data"]["DTYPE"])
-
     par["Data"]["phase_map"] = np.zeros(
-        (par["Data"]["image_dim"],
-         par["Data"]["image_dim"]), 
+        (par["Data"]["image_dimension"],
+         par["Data"]["image_dimension"]), 
         dtype=par["Data"]["DTYPE"])    
 
     FFT = linop.NUFFT(par=par, trajectory=trajectory)
     
 
-    windowsize = 50
+    windowsize = par["Data"]["num_reads"]/10
     window = np.hanning(windowsize)
     window = np.pad(window, int((par["Data"]["num_reads"]-windowsize)/2))
     
@@ -109,30 +127,15 @@ def estimate_coil_sensitivities_SOS(data, trajectory, par):
         )
     
     coils = coil_images/combined_image
+    thresh = skimage.filters.threshold_otsu(combined_image)
+    mask = combined_image > thresh*0.3
+    mask = dilate(mask, iterations=10)
     
 
     par["Data"]["coils"] = coils
+    par["Data"]["mask"] = mask
+    _norm_coils(par)
     
-    # normalize coil sensitivity profiles
-    sumSqrC = np.sqrt(
-        np.sum(
-            (par["Data"]["coils"]
-             *
-             np.conj(
-                 par["Data"]["coils"]
-                 )
-             ),
-            0
-            )
-        )
-    par["Data"]["in_scale"] = sumSqrC
-    if par["Data"]["num_coils"] == 1:
-        par["Data"]["coils"] = sumSqrC
-    else:
-        par["Data"]["coils"] = (
-            par["Data"]["coils"] / sumSqrC)
-
-
 def estimate_coil_sensitivities_NLINV(data, trajectory, par):
     """
       Estimate complex coil sensitivities using NLINV from Martin Uecker et al.
@@ -166,13 +169,13 @@ def estimate_coil_sensitivities_NLINV(data, trajectory, par):
 
     par["Data"]["coils"] = np.zeros(
         (par["Data"]["num_coils"], 
-         par["Data"]["image_dim"], 
-         par["Data"]["image_dim"]), 
+         par["Data"]["image_dimension"], 
+         par["Data"]["image_dimension"]), 
         dtype=par["Data"]["DTYPE"])
 
     par["Data"]["phase_map"] = np.zeros(
-        (par["Data"]["image_dim"],
-         par["Data"]["image_dim"]), 
+        (par["Data"]["image_dimension"],
+         par["Data"]["image_dimension"]), 
         dtype=par["Data"]["DTYPE"])
 
     FFT = linop.NUFFT(par=par, trajectory=trajectory)
@@ -206,21 +209,22 @@ def estimate_coil_sensitivities_NLINV(data, trajectory, par):
             )
 
     # normalize coil sensitivity profiles
+    _norm_coils(par)
+            
+def _norm_coils(par):
+    # normalize coil sensitivity profiles
     sumSqrC = np.sqrt(
         np.sum(
-            (par["Data"]["coils"]
-             *
-             np.conj(
-                 par["Data"]["coils"]
-                 )
-             ),
+            (par["Data"]["coils"] * np.conj(par["Data"]["coils"])),
             0
             )
         )
+    sumSqrC[sumSqrC==0] = 1
+    
     par["Data"]["in_scale"] = sumSqrC
     if par["Data"]["num_coils"] == 1:
         par["Data"]["coils"] = sumSqrC
     else:
         par["Data"]["coils"] = (
             par["Data"]["coils"] / sumSqrC)
-            
+        
