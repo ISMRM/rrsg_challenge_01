@@ -41,26 +41,26 @@ if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'brain'):
     data = np.squeeze(np.array(data))
     coil_img = np.array(coil_img)
     res = np.array(res)
-    
+
     if len(data.shape) == 3:
-        ref = data[-1] 
+        ref = data[-1]
         data = data[None,...]
         num_recon = 1
     else:
         ref = data[0][-1]
         num_recon = data.shape[0]
-    
+
     Delta = []
     for j in range(1, num_recon):
         Delta.append(np.linalg.norm(data[j]-ref, axis=(-2, -1))**2 /
                     np.linalg.norm(ref)**2)
     Delta = np.array(Delta)
-    
+
     ### Create Figure directory
     if not os.path.exists('.'+os.sep+'figures'+os.sep+'python'):
         os.makedirs('.'+os.sep+'figures'+os.sep+'python')
-    
-    
+
+
     # Brain ###################################################################
     plt.ion()
     figure = plt.figure(figsize=(6, 5))
@@ -78,7 +78,7 @@ if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'brain'):
     plt.savefig(
         '.'+os.sep+'figures'+os.sep+'python'
         +os.sep+'Conv_rate_small_delta.png')
-    
+
     plt.ion()
     figure = plt.figure(figsize=(6, 5))
     figure.tight_layout()
@@ -95,7 +95,7 @@ if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'brain'):
     plt.savefig(
         '.'+os.sep+'figures'+os.sep+'python'
         +os.sep+'Conv_rate_big_delta.png',dpi=300)
-    
+
     plt.ion()
     figure = plt.figure(figsize=(5, 6))
     figure.subplots_adjust(hspace=0.1, wspace=0.1)
@@ -109,7 +109,7 @@ if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'brain'):
         ax[-1].grid(False)
         ax[-1].set_xticks([])
         ax[-1].set_yticks([])
-    
+
     for j in range(data.shape[0]):
         ax[3*j].imshow(np.abs(coil_img[j][0]), cmap='gray')
         ax[3*j+1].imshow(np.abs(data[j][1]), cmap='gray')
@@ -126,8 +126,8 @@ if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'brain'):
     plt.savefig(
         '.'+os.sep+'figures'+os.sep+'python'
         +os.sep+'Comparison_Reconstruction_Brain.png')
-    
-    
+
+
 
 # Heart #######################################################################
 if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'heart'):
@@ -150,19 +150,19 @@ if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'heart'):
     os.chdir(cwd)
     data = np.squeeze(np.array(data))
     res = np.array(res)
-    
+
     if len(data.shape) == 3:
-        ref = data[-1] 
+        ref = data[-1]
         data = data[None,...]
         num_recon = 1
     else:
         ref = data[0][-1]
         num_recon = data.shape[0]
-        
+
     ### Create Figure directory
     if not os.path.exists('.'+os.sep+'figures'+os.sep+'python'):
         os.makedirs('.'+os.sep+'figures'+os.sep+'python')
-        
+
     plt.ion()
     figure = plt.figure(figsize=(8, 4))
     figure.subplots_adjust(hspace=0, wspace=0.05)
@@ -183,9 +183,13 @@ if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'heart'):
           data[j].shape[-1]-25, data[j].shape[-1]-5, labels[j], color="w")
     plt.savefig(
         '.'+os.sep+'figures'+os.sep+'python'+os.sep+'Heart.png', dpi=300)
-    
-    
+
+
 if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'cardiac'):
+    matres = sio.loadmat('/mnt/data/Code/CGSENSE_challenge_sub/Results/Matlab/Ref_matlab/result_KI.mat')
+    init = matres["initial"]
+    sc = matres["singleCoil"]
+    final = matres["final"]
     cwd = os.getcwd()
     outdir = '.'+os.sep+'output'+os.sep+'python'+os.sep+'cardiac'
     os.chdir(outdir)
@@ -209,26 +213,26 @@ if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'cardiac'):
     data = np.squeeze(np.array(data))
     coil_img = np.array(coil_img)
     res = np.array(res)
-    
+
     if len(data.shape) == 3:
-        ref = data[-1] 
+        ref = data[-1]
         data = data[None,...]
         num_recon = 1
     else:
         ref = data[0][-1]
         num_recon = data.shape[0]
-    
+
     Delta = []
     for j in range(1, num_recon):
         Delta.append(np.linalg.norm(data[j]-ref, axis=(-2, -1))**2 /
                     np.linalg.norm(ref)**2)
     Delta = np.array(Delta)
-    
+
     ### Create Figure directory
     if not os.path.exists('.'+os.sep+'figures'+os.sep+'python'):
         os.makedirs('.'+os.sep+'figures'+os.sep+'python')
-    
-    
+
+
     # Brain ###################################################################
     plt.ion()
     figure = plt.figure(figsize=(6, 5))
@@ -246,7 +250,7 @@ if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'cardiac'):
     plt.savefig(
         '.'+os.sep+'figures'+os.sep+'python'
         +os.sep+'Conv_rate_small_delta.png')
-    
+
     plt.ion()
     figure = plt.figure(figsize=(6, 5))
     figure.tight_layout()
@@ -263,7 +267,7 @@ if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'cardiac'):
     plt.savefig(
         '.'+os.sep+'figures'+os.sep+'python'
         +os.sep+'Conv_rate_big_delta.png',dpi=300)
-    
+
     plt.ion()
     figure = plt.figure(figsize=(5, 6))
     figure.subplots_adjust(hspace=0.1, wspace=0.1)
@@ -277,7 +281,7 @@ if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'cardiac'):
         ax[-1].grid(False)
         ax[-1].set_xticks([])
         ax[-1].set_yticks([])
-    
+
     for j in range(data.shape[0]):
         ax[3*j].imshow(np.abs(coil_img[j][0]), cmap='gray')
         ax[3*j+1].imshow(np.abs(data[j][1]), cmap='gray')
@@ -290,13 +294,23 @@ if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'cardiac'):
         if j == 0:
             ax[3*j].set_title("Single coil")
             ax[3*j+1].set_title("Initial")
-            ax[3*j+2].set_title("Final")      
+            ax[3*j+2].set_title("Final")
+    j=1
+    ax[3*j].imshow(np.abs(sc)/np.abs(sc).max(), cmap='gray')
+    ax[3*j+1].imshow(np.abs(init)/np.abs(init).max(), cmap='gray')
+    ax[3*j+2].imshow(np.abs(final)/np.abs(final).max(), cmap='gray')
+    ax[3*j].set_ylabel("Acc " + str(j+1), rotation=0, labelpad=20)
+    ax[3*j+1].text(
+      data[0].shape[-1]-20, data[0].shape[-1]-5, "1", color="w")
+    ax[3*j+2].text(data[0].shape[-1]-50, data[0].shape[-1]-5,
+                  str(data[0].shape[0]-1), color="w")
     plt.savefig(
         '.'+os.sep+'figures'+os.sep+'python'
-        +os.sep+'Comparison_Reconstruction_Cardiac.svg')
+        +os.sep+'Comparison_Reconstruction_KI.svg')
+
 
 if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'spiral'):
-    matres = sio.loadmat('C:/Users/Oli/Documents/CGSENSE_challenge_sub/Results/Matlab/Ref_matlab/result_spiral.mat')
+    matres = sio.loadmat('/mnt/data/Code/CGSENSE_challenge_sub/Results/Matlab/Ref_matlab/result_spiral.mat')
     init = matres["initial"]
     sc = matres["singleCoil"]
     final = matres["final"]
@@ -323,26 +337,26 @@ if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'spiral'):
     data = np.squeeze(np.array(data))
     coil_img = np.array(coil_img)
     res = np.array(res)
-    
+
     if len(data.shape) == 3:
-        ref = data[-1] 
+        ref = data[-1]
         data = data[None,...]
         num_recon = 1
     else:
         ref = data[0][-1]
         num_recon = data.shape[0]
-    
+
     Delta = []
     for j in range(1, num_recon):
         Delta.append(np.linalg.norm(data[j]-ref, axis=(-2, -1))**2 /
                     np.linalg.norm(ref)**2)
     Delta = np.array(Delta)
-    
+
     ### Create Figure directory
     if not os.path.exists('.'+os.sep+'figures'+os.sep+'python'):
         os.makedirs('.'+os.sep+'figures'+os.sep+'python')
-    
-    
+
+
     # Brain ###################################################################
     plt.ion()
     figure = plt.figure(figsize=(6, 5))
@@ -360,7 +374,7 @@ if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'spiral'):
     plt.savefig(
         '.'+os.sep+'figures'+os.sep+'python'
         +os.sep+'Conv_rate_small_delta.png')
-    
+
     plt.ion()
     figure = plt.figure(figsize=(6, 5))
     figure.tight_layout()
@@ -377,7 +391,7 @@ if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'spiral'):
     plt.savefig(
         '.'+os.sep+'figures'+os.sep+'python'
         +os.sep+'Conv_rate_big_delta.png',dpi=300)
-    
+
     plt.ion()
     figure = plt.figure(figsize=(5, 6))
     figure.subplots_adjust(hspace=0.1, wspace=0.1)
@@ -391,7 +405,7 @@ if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'spiral'):
         ax[-1].grid(False)
         ax[-1].set_xticks([])
         ax[-1].set_yticks([])
-    
+
     for j in range(data.shape[0]):
         ax[3*j].imshow(np.abs(coil_img[j][0]/np.abs(coil_img[j][0].max())), cmap='gray')
         ax[3*j+1].imshow(np.abs(data[j][1])/np.abs(data[j][1]).max(), cmap='gray')
@@ -405,7 +419,7 @@ if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'spiral'):
             ax[3*j].set_title("Single coil")
             ax[3*j+1].set_title("Initial")
             ax[3*j+2].set_title("Final")
-    j=1   
+    j=1
     ax[3*j].imshow(np.abs(sc)/np.abs(sc).max(), cmap='gray')
     ax[3*j+1].imshow(np.abs(init)/np.abs(init).max(), cmap='gray')
     ax[3*j+2].imshow(np.abs(final)/np.abs(final).max(), cmap='gray')
