@@ -33,9 +33,10 @@ def setupPar(par):
     par["FFT"]["kernellength"] = 5000
 
     par["Data"]["num_coils"] = 5
-    par["Data"]["image_dim"] = 256
+    par["Data"]["image_dimension"] = 256
     par["Data"]["num_proj"] = 34
     par["Data"]["num_reads"] = 512
+    par["Data"]["grid_size"] = 512
     file = h5py.File(
         '.'+os.sep+'python'+os.sep+'test'+os.sep+'smalltest.h5',
         'r'
@@ -50,13 +51,13 @@ def setupPar(par):
     par["Data"]["coils"] = (
         np.random.randn(
             par["Data"]["num_coils"],
-            par["Data"]["image_dim"],
-            par["Data"]["image_dim"]
+            par["Data"]["image_dimension"],
+            par["Data"]["image_dimension"]
             ) + 1j *
         np.random.randn(
             par["Data"]["num_coils"],
-            par["Data"]["image_dim"],
-            par["Data"]["image_dim"]
+            par["Data"]["image_dimension"],
+            par["Data"]["image_dimension"]
             )
         )
 
@@ -89,14 +90,14 @@ class OperatorKspaceRadial(unittest.TestCase):
         self.opinfwd = (
             np.random.randn(
                 par["Data"]["num_coils"],
-                par["Data"]["image_dim"],
-                par["Data"]["image_dim"]
+                par["Data"]["image_dimension"],
+                par["Data"]["image_dimension"]
                 )
             + 1j *
             np.random.randn(
                 par["Data"]["num_coils"],
-                par["Data"]["image_dim"],
-                par["Data"]["image_dim"]
+                par["Data"]["image_dimension"],
+                par["Data"]["image_dimension"]
                 )
             )
         self.opinadj = (
@@ -151,13 +152,13 @@ class OperatorMRIRadial(unittest.TestCase):
 
         self.opinfwd = (
             np.random.randn(
-                par["Data"]["image_dim"],
-                par["Data"]["image_dim"]
+                par["Data"]["image_dimension"],
+                par["Data"]["image_dimension"]
                 )
             + 1j *
             np.random.randn(
-                par["Data"]["image_dim"],
-                par["Data"]["image_dim"]
+                par["Data"]["image_dimension"],
+                par["Data"]["image_dimension"]
                 )
             )
         self.opinadj = (

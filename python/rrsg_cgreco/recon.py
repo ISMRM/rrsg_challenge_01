@@ -500,7 +500,7 @@ def _decor_noise(data, noise, par, coils=None):
             coils = invL@coils
             coils = np.reshape(coils,
                                coilshape)
-        return (data, coils)
+        return data, coils
 
 def save_coil_(pathtofile, undersampling_factor, par):
     name = os.path.normpath(pathtofile)
