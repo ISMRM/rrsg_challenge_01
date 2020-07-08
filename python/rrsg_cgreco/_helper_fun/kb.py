@@ -38,7 +38,7 @@ from scipy.special import i0 as i0
 # Modified by O. Maier
 
 
-def kaiser_bessel(u, width, beta, gridisze):
+def kaiser_bessel(u, width, beta):
     """
     Kaiser-Bessel window precomputation.
 
@@ -51,8 +51,6 @@ def kaiser_bessel(u, width, beta, gridisze):
       beta (float):
         Scale for the argument of the modified bessel function of oder 0,
         see Jackson '91 and Beatty et al.
-      gridsize (int):
-        Gridsize of oversampled grid
 
     Returns
     -------
@@ -60,9 +58,6 @@ def kaiser_bessel(u, width, beta, gridisze):
         The Kaiser-Bessel window
     """
     assert np.size(width) == 1, 'width should be a single scalar value.'
-
-    y = np.zeros_like(u)  # Allocate space.
-    # uz = np.where(np.abs(u) <= width / (2))  # Indices where u<w/2.
 
     # if np.size(uz) > 0:  # Calculate y at indices uz.
     x = beta * np.sqrt(1 - (2 * u / width) ** 2)

@@ -27,10 +27,10 @@ from rrsg_cgreco._helper_fun.kb import kaiser_bessel
 
 
 def calculate_keiser_bessel_kernel(
-        kernelwidth, 
-        overgridfactor, 
-        gridsize, 
-        kernellength=32, 
+        kernelwidth,
+        overgridfactor,
+        gridsize,
+        kernellength=32,
         **kwargs):
     """
     Calculate the appropriate Kaiser-Bessel gridding kernel.
@@ -72,17 +72,17 @@ def calculate_keiser_bessel_kernel(
     # Rapid Gridding Reconstruction With a Minimal Oversampling Ratio -
     # equation [5]
     beta = np.pi * np.sqrt(
-        (kernelwidth / overgridfactor) ** 2 
-        * (overgridfactor - 0.5) ** 2 
+        (kernelwidth / overgridfactor) ** 2
+        * (overgridfactor - 0.5) ** 2
         - 0.8
         )
     # Kernel radii.
     u = np.linspace(
-        0, 
-        (kernelwidth/2), 
+        0,
+        (kernelwidth/2),
         int(np.ceil(kernellength*kernelwidth/2)))
 
-    kern = kaiser_bessel(u, kernelwidth, beta, gridsize)
+    kern = kaiser_bessel(u, kernelwidth, beta)
     kern = kern / kern[u == 0]  # Normalize.
 
     ft_y = np.flip(kern)
@@ -90,27 +90,19 @@ def calculate_keiser_bessel_kernel(
         ft_y = np.concatenate((ft_y[:-1], kern))
     else:
         ft_y = np.concatenate((ft_y, kern))
-    
-    ft_y = np.pad(
-        ft_y, 
-        (int(np.floor((gridsize * kernellength - ft_y.size) / 2)),
-         int(np.ceil((gridsize * kernellength - ft_y.size) / 2))),
-        'constant'
-        )
+
     ft_y = np.abs(
       np.fft.fftshift(
           np.fft.ifft(
-              np.fft.ifftshift(
-                  ft_y
-                  )
+                  ft_y, gridsize * kernellength
               )
           )
       * ft_y.size
       )
 
     x = np.linspace(
-        -int(np.floor(gridsize/(2*overgridfactor))), 
-        int(np.floor(gridsize/(2*overgridfactor)))-1, 
+        -int(np.floor(gridsize/(2*overgridfactor))),
+        int(np.floor(gridsize/(2*overgridfactor)))-1,
         int(np.floor(gridsize/(overgridfactor)))
         )
 

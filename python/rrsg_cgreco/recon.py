@@ -27,7 +27,7 @@ import h5py
 import argparse
 import configparser
 from rrsg_cgreco._helper_fun.density_compensation \
-    import get_density_from_gridding 
+    import get_density_from_gridding
 from rrsg_cgreco._helper_fun.est_coils import estimate_coil_sensitivities
 import rrsg_cgreco.linop as linop
 import rrsg_cgreco.solver as solver
@@ -38,7 +38,7 @@ DTYPE_real = np.float32
 
 
 def _get_args(
-      configfile='.'+os.sep+'python'+os.sep+'default', 
+      configfile='.'+os.sep+'python'+os.sep+'default',
       pathtofile='.'+os.sep+'data'+os.sep+'rawdata_brain_radial_96proj_12ch.h5',
       undersampling_factor=1
       ):
@@ -74,7 +74,7 @@ def _get_args(
         help='Path to the h5 data file.'
         )
     parser.add_argument(
-        '--acc', default=undersampling_factor, type=int, 
+        '--acc', default=undersampling_factor, type=int,
         dest='undersampling_factor',
         help='Desired undersampling factor.'
         )
@@ -83,7 +83,7 @@ def _get_args(
 
 
 def run(
-      configfile='.'+os.sep+'python'+os.sep+'default', 
+      configfile='.'+os.sep+'python'+os.sep+'default',
       datafile='.'+os.sep+'data'+os.sep+'rawdata_brain_radial_96proj_12ch.h5',
       undersampling_factor=1,
       ):
@@ -120,7 +120,7 @@ def read_data(
       noise_key='noise'
       ):
     """
-    Handle data and possible undersampling. 
+    Handle data and possible undersampling.
 
     Reading in h5 data from the path variable.
     Apply undersampling if specified.
@@ -140,7 +140,7 @@ def read_data(
         data_rawdata_key (string):
             Name of the data array in the .h5 file. defaults to "rawdata"
         data_trajectory_key (string):
-            Name of the trajectory array in the .h5 file. defaults to 
+            Name of the trajectory array in the .h5 file. defaults to
             "trajectory"
         noise_key (string):
             Name of the noise reference array in the .h5 file.
@@ -153,6 +153,11 @@ def read_data(
             The k-space trajectory
         noise_scan (np.complex64):
             The noise reference scan
+        data_par (struct):
+            Optional data parameters derived from the trajectory
+        Coils (np.complex64):
+            If available, read in complex coil senstivity profiles.
+            Defaults to None.
     Raises
     ------
          ValueError:
@@ -160,12 +165,12 @@ def read_data(
     """
     if not os.path.isfile(pathtofile):
         err = FileNotFoundError(
-            errno.ENOENT, 
+            errno.ENOENT,
             os.strerror(errno.ENOENT),
             pathtofile)
         raise FileNotFoundError(
             "Given path does not point to an existing file:\n{0}".format(
-            err))
+                err))
 
     name = os.path.normpath(pathtofile)
     with h5py.File(name, 'r') as h5_dataset:
@@ -205,8 +210,10 @@ def read_data(
 
     # Normalize trajectory to the range of (-1/2)/(1/2)
     image_dim = int(np.ceil(2 * np.max(np.abs(trajectory))))
-    overgrid_factor_a = 1/np.linalg.norm(trajectory[:,-2,0]-trajectory[:,-1,0])
-    overgrid_factor_b = 1/np.linalg.norm(trajectory[:,0,0]-trajectory[:,1,0])
+    overgrid_factor_a = 1/np.linalg.norm(
+        trajectory[:, -2, 0]-trajectory[:, -1, 0])
+    overgrid_factor_b = 1/np.linalg.norm(
+        trajectory[:, 0, 0]-trajectory[:, 1, 0])
 
     data_par = {}
     data_par["overgridfactor"] = np.min((overgrid_factor_a,
@@ -225,7 +232,7 @@ def read_data(
     assert trajectory.shape[:-1] == rawdata.shape[-2:], \
         "Rawdata and trajectory should have the same number "\
         "of read/projection pairs."
-        
+
     if image_dim < 10:
         image_dim = None
 
@@ -240,9 +247,9 @@ def setup_parameter_dict(
       ):
     """
     Parameter dict generation.
-    
+
     This function reads in the parameters given in the configfile as well
-    as some general information about the data and trajectory such as 
+    as some general information about the data and trajectory such as
     image size.
 
     Args
@@ -254,7 +261,7 @@ def setup_parameter_dict(
         trajectory (np.array):
             The associated trajectory data
         data_par (dcit):
-            The image grid dimension and 
+            The image grid dimension and
             overgrid factor, dervied from the trajectory
 
     Returns
@@ -268,7 +275,7 @@ def setup_parameter_dict(
     config = configparser.ConfigParser()
     ext = os.path.splitext(configfile)[-1]
     if ext != ".txt":
-        configfile = configfile + '.txt' 
+        configfile = configfile + '.txt'
     try:
         config.read_file(open(configfile))
         config.read(configfile)
@@ -276,12 +283,12 @@ def setup_parameter_dict(
         raise FileNotFoundError(
             "Given Path doesn't point to an existing config file:\n{0}".format(
                 err))
-    
+
     for section_key in config.sections():
         parameter[section_key] = {}
         for value_key in config[section_key].keys():
             if "do_" in value_key:
-                try:  
+                try:
                     parameter[section_key][value_key] = config.getboolean(
                         section_key,
                         value_key)
@@ -309,24 +316,24 @@ def setup_parameter_dict(
         parameter["Data"]["DTYPE_real"] = np.float32
     elif parameter["Data"]["precision"].lower() == "double":
         parameter["Data"]["DTYPE"] = np.complex128
-        parameter["Data"]["DTYPE_real"] = np.float64    
+        parameter["Data"]["DTYPE_real"] = np.float64
     else:
         raise ValueError("precision needs to be set to single or double.")
-    
+
     [n_ch, n_spokes, num_reads] = rawdata.shape
-        
+
     parameter["Data"]["num_coils"] = n_ch
     parameter["Data"]["num_reads"] = num_reads
     parameter["Data"]["num_proj"] = n_spokes
     parameter["Data"]["grid_size"] = int(np.ceil(
-        parameter["Data"]["image_dimension"] * 
+        parameter["Data"]["image_dimension"] *
         parameter["Data"]["overgridfactor"]))
-    
+
     # Calculate density compensation for non-cartesian data.
     if parameter["Data"]["do_density_correction"]:
         print("Estimating gridding density...")
         compute_density_compensation(parameter, trajectory)
-        
+
     else:
         parameter["FFT"]["dens_cor"] = np.ones(
             trajectory.shape[:-1],
@@ -337,10 +344,10 @@ def setup_parameter_dict(
 def compute_density_compensation(parameter, trajectory):
         """
         Compensate for non uniform sampling density
-        
+
         This function computes the sampling density via gridding of ones and
         the correct intensity normalization of the NUFFT operator.
-    
+
         Args
         ----
             parameter (dict):
@@ -349,7 +356,7 @@ def compute_density_compensation(parameter, trajectory):
             trajectory (np.array):
                 The associated trajectory data
         """
-        
+
         # First setup a NUFFT with the given trajectroy
         FFT = linop.NUFFT(par=parameter,
                           trajectory=trajectory)
@@ -359,26 +366,26 @@ def compute_density_compensation(parameter, trajectory):
         # and use it as density compensation
         parameter["FFT"]["dens_cor"] = np.sqrt(
             get_density_from_gridding(
-                parameter["Data"], 
+                parameter["Data"],
                 parameter["FFT"]["gridding_matrix"]
                 )
             )
         # Build a new NUFFT using the correct density estimation
         FFT = linop.NUFFT(par=parameter,
                           trajectory=trajectory)
-        
+
         # Check intensity scaling of a dirac function - should be 1
         # Perform normalization to one and add it to the density compensation
         image_dirac = np.zeros((parameter["Data"]["image_dimension"],
                                 parameter["Data"]["image_dimension"]),
                                 dtype=parameter["Data"]["DTYPE"])
-        image_dirac[int(parameter["Data"]["image_dimension"]/2), 
+        image_dirac[int(parameter["Data"]["image_dimension"]/2),
                     int(parameter["Data"]["image_dimension"]/2)] = (
                         1+1j
                         )/np.sqrt(2)
         impulse_response = FFT.adjoint(FFT.forward(image_dirac))
         scale = impulse_response[0,
-                                  int(parameter["Data"]["image_dimension"]/2), 
+                                  int(parameter["Data"]["image_dimension"]/2),
                                   int(parameter["Data"]["image_dimension"]/2)]
         parameter["FFT"]["dens_cor"] *= (
             1/np.sqrt(np.abs(scale))
@@ -423,7 +430,7 @@ def save_to_file(
     os.chdir('.'+os.sep+'output'+os.sep+'python' + outdir)
     f = h5py.File(
         "CG_reco_inscale_" + str(data_par["do_intensity_scale"]) + "_denscor_"
-        + str(data_par["do_density_correction"]) + 
+        + str(data_par["do_density_correction"]) +
         "_reduction_" + str(args.undersampling_factor)
         + ".h5",
         "w"
@@ -449,7 +456,7 @@ def save_to_file(
 def _decor_noise(data, noise, par, coils=None):
     """
     Decorrelate the data with using a given noise covariance matrix
-    
+
     Perform prewithening with given noise data. If no data was aquired,
     the input data without modifications is returned.
 
@@ -463,7 +470,7 @@ def _decor_noise(data, noise, par, coils=None):
         The data parameter dict.
       coils (np.complex64):
         The optional complex coil sensitivity data.
-        
+
     Returns
     -------
         data (np.complex64):
@@ -472,7 +479,7 @@ def _decor_noise(data, noise, par, coils=None):
             The corresponding coil sensitivities, if provided.
     """
     if noise is None:
-        return data
+        return data, coils
     else:
         print("Performing noise decorrelation...")
         if not np.allclose(noise.shape, par["num_coils"]):
@@ -494,14 +501,14 @@ def _decor_noise(data, noise, par, coils=None):
             coils = np.reshape(coils,
                                coilshape)
         return (data, coils)
-    
+
 def save_coil_(pathtofile, undersampling_factor, par):
     name = os.path.normpath(pathtofile)
     with h5py.File(name, 'r+') as h5_dataset:
         if (undersampling_factor != 1) and ("Coils" not in h5_dataset.keys()):
             raise ValueError("Coils should be estimated without undersampling!")
         elif "Coils" in h5_dataset.keys():
-            pass  
+            pass
         else:
             h5_dataset["Coils"] = par["coils"]
             h5_dataset["mask"] = par["mask"]
@@ -510,13 +517,13 @@ def save_coil_(pathtofile, undersampling_factor, par):
 def _run_reco(args):
     # Read input data
     kspace_data, trajectory, noise, data_par, coils = read_data(
-        pathtofile=args.pathtofile, 
+        pathtofile=args.pathtofile,
         undersampling_factor=args.undersampling_factor
         )
     # Setup parameters
     parameter = setup_parameter_dict(
         args.configfile,
-        rawdata=kspace_data, 
+        rawdata=kspace_data,
         trajectory=trajectory,
         data_par=data_par)
 
@@ -529,13 +536,13 @@ def _run_reco(args):
 
     # Get coil sensitivities in the parameter dict
     estimate_coil_sensitivities(
-        kspace_data, 
-        trajectory, 
+        kspace_data,
+        trajectory,
         parameter,
         coils=coils)
     # Save SoS coils if not present
     save_coil_(
-        pathtofile=args.pathtofile, 
+        pathtofile=args.pathtofile,
         undersampling_factor=args.undersampling_factor,
         par=parameter["Data"]
         )
@@ -554,32 +561,32 @@ def _run_reco(args):
     recon_result, residuals = cgs.optimize(
         data=kspace_data * parameter["FFT"]["dens_cor"]
         )
-    
-    
+
+
     # Single Coil images after FFT
     single_coil_images = cgs.operator.NUFFT.adjoint(
         kspace_data * parameter["FFT"]["dens_cor"])
-    
+
     # Store results
-    save_to_file(recon_result, 
-                 residuals, 
-                 single_coil_images, 
-                 parameter["Data"], 
+    save_to_file(recon_result,
+                 residuals,
+                 single_coil_images,
+                 parameter["Data"],
                  args)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='CG Sense Reconstruction')
     parser.add_argument(
-        '--config', 
-        default='.'+os.sep+'python'+os.sep+'default', 
+        '--config',
+        default='.'+os.sep+'python'+os.sep+'default',
         dest='configfile',
         help='Path to the config file to use. '
              'If not specified, use default parameters.'
              )
     parser.add_argument(
-        '--datafile', 
-        default='.'+os.sep+'data'+os.sep+'rawdata_brain_radial_96proj_12ch.h5', 
+        '--datafile',
+        default='.'+os.sep+'data'+os.sep+'rawdata_brain_radial_96proj_12ch.h5',
         dest='pathtofile',
         help='Path to the .h5 data file.'
         )
