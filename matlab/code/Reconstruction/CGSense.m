@@ -87,33 +87,44 @@ k      = k(:,selection,:);
 k      = reshape(k, size(k,1)*size(k,2), size(k,3));
 
 %% Set up Gridding
-grid_size        = oversampling_factor*image_dim;                                               % Grid size including oversampling
+grid_size        = round(oversampling_factor*image_dim);                                        % Grid size including oversampling
+if mod(grid_size, 2) == 1
+    grid_size = grid_size+1;
+end 
 griddingOperator = prepareGriddingOperator(k', oversampling_factor, kernel_width, grid_size);   % Get gridding operator
-center           = ceil(grid_size/2-image_dim/2+1):ceil(grid_size/2+image_dim/2);                           % Indices center chunk
+center           = ceil(grid_size/2-image_dim/2+1):ceil(grid_size/2+image_dim/2);               % Indices center chunk
 
 %% SENSE Map
 % Load SENSE maps or assume sense maps == 1
 if do_sense_recon
     senseMaps = data.sense.data;
     mask      = data.sense.mask;
-    % Load and resize sense maps
-%     senseMaps = zeros(image_dim,image_dim,size(data.sense.data,3));
-%     for nCoil = 1:size(senseMaps,3)
-%         senseMaps(:,:,nCoil) = imresize(data.sense.data(:,:,nCoil), [image_dim image_dim]);
-%     end
-%     mask = imresize(data.sense.mask, [image_dim image_dim], 'nearest');
     
     % Adjust size if sense map was created on another size
-    if (size(senseMaps,1) ~= grid_size)
-        senseMaps_os = zeros(grid_size, grid_size, size(senseMaps,3));
-        for nCoil = 1:size(senseMaps,3)
-            senseMaps_os(center,center,nCoil) = imresize(senseMaps(:,:,nCoil), [image_dim image_dim]);
-        end
-        mask_os = zeros(grid_size, grid_size);
-        mask_os(center,center) = imresize(data.sense.mask, [image_dim image_dim], 'nearest');
-        senseMaps = senseMaps_os;
-        mask      = mask_os;
+    if grid_size <= size(senseMaps,1)
+        indsCenterFOV = ceil(size(senseMaps,1)/2-grid_size/2+1):ceil(size(senseMaps,2)/2+grid_size/2);
+        senseMapsFOV   = senseMaps(indsCenterFOV, indsCenterFOV, :);
+        senseMaps      = senseMapsFOV;
+        mask           = round(data.sense.mask(indsCenterFOV, indsCenterFOV));
+    else
+        senseMapsFOV  = zeros(grid_size, grid_size, size(senseMaps,3));
+        indsCenterFOV = ceil(grid_size/2-size(senseMaps,1)/2+1):ceil(grid_size/2+size(senseMaps,2)/2);
+        senseMapsFOV(indsCenterFOV, indsCenterFOV, :) = senseMaps;
+        senseMaps     = senseMapsFOV;
+        mask          = zeros(grid_size, grid_size);
+        mask(indsCenterFOV, indsCenterFOV) = round(data.sense.mask);
     end
+    
+%     if (size(senseMapsFOV,1) ~= grid_size)
+%         senseMaps_os = zeros(grid_size, grid_size, size(senseMaps,3));
+%         for nCoil = 1:size(senseMaps,3)
+%             senseMaps_os(center,center,nCoil) = imresize(senseMaps(:,:,nCoil), [image_dim image_dim]);
+%         end
+%         mask_os = zeros(grid_size, grid_size);
+%         mask_os(center,center) = imresize(data.sense.mask, [image_dim image_dim], 'nearest');
+%         senseMaps = senseMaps_os;
+%         mask      = mask_os;
+%     end
 else
     senseMaps = ones(oversampling_factor*image_dim, oversampling_factor*image_dim, size(signal,2));
     mask      = ones(oversampling_factor*image_dim, oversampling_factor*image_dim);

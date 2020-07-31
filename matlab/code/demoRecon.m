@@ -1,8 +1,8 @@
 % This script runs a sample reconstruction using the CG-SENSE algorithm.
 
 %% Load Data
-% Put in folder containing the h5 files, i.e.
-pathData = 'rrsg_challenge_01/data/Spiral';
+% Put in path to the h5 data
+pathData = '...';
 data = loadData(pathData);
 
 %% Set up properties
@@ -17,7 +17,7 @@ properties.n_iterations                 = 8;            % Number of CG iteration
 % 1 = Plot current image after each CG iteration? 
 % 2 = Plot diagnostics/aux data (sense map, k-space filter, intensity
 %     correction)
-properties.visualization_level          = 1; 
+properties.visualization_level          = 1;
 
 %% Reconstruct Image
 out = CGSense(data, properties);
