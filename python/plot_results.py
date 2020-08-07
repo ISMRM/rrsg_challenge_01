@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib import rc
 import h5py
+import scipy.io as sio
 import os
 
 rc('text', usetex=True)
@@ -40,26 +41,26 @@ if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'brain'):
     data = np.squeeze(np.array(data))
     coil_img = np.array(coil_img)
     res = np.array(res)
-    
+
     if len(data.shape) == 3:
-        ref = data[-1] 
+        ref = data[-1]
         data = data[None,...]
         num_recon = 1
     else:
         ref = data[0][-1]
         num_recon = data.shape[0]
-    
+
     Delta = []
     for j in range(1, num_recon):
         Delta.append(np.linalg.norm(data[j]-ref, axis=(-2, -1))**2 /
                     np.linalg.norm(ref)**2)
     Delta = np.array(Delta)
-    
+
     ### Create Figure directory
     if not os.path.exists('.'+os.sep+'figures'+os.sep+'python'):
         os.makedirs('.'+os.sep+'figures'+os.sep+'python')
-    
-    
+
+
     # Brain ###################################################################
     plt.ion()
     figure = plt.figure(figsize=(6, 5))
@@ -77,7 +78,7 @@ if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'brain'):
     plt.savefig(
         '.'+os.sep+'figures'+os.sep+'python'
         +os.sep+'Conv_rate_small_delta.png')
-    
+
     plt.ion()
     figure = plt.figure(figsize=(6, 5))
     figure.tight_layout()
@@ -94,7 +95,7 @@ if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'brain'):
     plt.savefig(
         '.'+os.sep+'figures'+os.sep+'python'
         +os.sep+'Conv_rate_big_delta.png',dpi=300)
-    
+
     plt.ion()
     figure = plt.figure(figsize=(5, 6))
     figure.subplots_adjust(hspace=0.1, wspace=0.1)
@@ -108,7 +109,7 @@ if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'brain'):
         ax[-1].grid(False)
         ax[-1].set_xticks([])
         ax[-1].set_yticks([])
-    
+
     for j in range(data.shape[0]):
         ax[3*j].imshow(np.abs(coil_img[j][0]), cmap='gray')
         ax[3*j+1].imshow(np.abs(data[j][1]), cmap='gray')
@@ -125,8 +126,8 @@ if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'brain'):
     plt.savefig(
         '.'+os.sep+'figures'+os.sep+'python'
         +os.sep+'Comparison_Reconstruction_Brain.png')
-    
-    
+
+
 
 # Heart #######################################################################
 if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'heart'):
@@ -149,19 +150,19 @@ if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'heart'):
     os.chdir(cwd)
     data = np.squeeze(np.array(data))
     res = np.array(res)
-    
+
     if len(data.shape) == 3:
-        ref = data[-1] 
+        ref = data[-1]
         data = data[None,...]
         num_recon = 1
     else:
         ref = data[0][-1]
         num_recon = data.shape[0]
-        
+
     ### Create Figure directory
     if not os.path.exists('.'+os.sep+'figures'+os.sep+'python'):
         os.makedirs('.'+os.sep+'figures'+os.sep+'python')
-        
+
     plt.ion()
     figure = plt.figure(figsize=(8, 4))
     figure.subplots_adjust(hspace=0, wspace=0.05)
@@ -182,4 +183,3 @@ if os.path.exists('.'+os.sep+'output'+os.sep+'python'+os.sep+'heart'):
           data[j].shape[-1]-25, data[j].shape[-1]-5, labels[j], color="w")
     plt.savefig(
         '.'+os.sep+'figures'+os.sep+'python'+os.sep+'Heart.png', dpi=300)
-

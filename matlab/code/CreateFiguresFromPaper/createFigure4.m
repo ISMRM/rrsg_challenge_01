@@ -11,14 +11,14 @@ function [Deltas, deltas, durationIterSteps, fig4]= createFigure4(data, pathResu
 
 %% General Properties
 properties.image_dim = data.Nimg;        
-properties.gridding.oversampling_factor = 2;  
-properties.gridding.kernel_width = 4;   
+properties.gridding.oversampling_factor = data.overgrid_factor;  
+properties.gridding.kernel_width = 5;   
 properties.visualization_level = 0;
 
 %% Reconstruct R=1 image (reference for "Delta")
 properties.do_sense_recon = 1;
 properties.undersampling_factor = 1;
-properties.n_iterations = 5;
+properties.n_iterations = 10;
 properties.kSpaceFilterMethod = 'gridding'; 
 
 out = CGSense(data, properties);
@@ -31,7 +31,7 @@ reference.mask = mask_tmp;
 
 %% Reconstruct Range of undersampling factors (R = 2...5)
 Rrange = [1, 2, 3, 4, 5];
-nIterations = 30;
+nIterations = 10;
 properties.n_iterations = nIterations;
 
 deltas = zeros(nIterations+1, length(Rrange));

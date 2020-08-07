@@ -8,11 +8,11 @@ function fig6 = createFigure6(data, pathResults)
                 
 % general properties for all recons
 properties.image_dim = data.Nimg;
-properties.gridding.oversampling_factor = 2;
-properties.gridding.kernel_width = 4;
+properties.gridding.oversampling_factor = data.overgrid_factor;
+properties.gridding.kernel_width = 5;
 properties.visualization_level = 1;
 properties.do_sense_recon = 1;
-properties.n_iterations = 6;
+properties.n_iterations = 10;
 
 % setup property array for recon loop
 nSpokesArray = 11*(1:5);
@@ -30,7 +30,7 @@ for iRecon = 1:nRecons
     out = CGSense(data, properties);
     cardiacImages(:,:,iRecon) = out.imageComb;    
 end
-
+save('result_heart.mat', 'cardiacImages');
 
 %% Plot the results and save the figure in results subfolder
 fig6 = figure('Name', 'Figure 6: Heart Recon with Various Radial Undersampling Factors');
