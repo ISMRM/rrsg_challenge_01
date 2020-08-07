@@ -7,10 +7,9 @@ function fig6 = createFigure6(data, pathResults)
 % done (equals undersampling factors of 5,4,3,2,1 respectively).
                 
 % general properties for all recons
-data.Nimg=240;
 properties.image_dim = data.Nimg;
-properties.gridding.oversampling_factor = 1+1/3;
-properties.gridding.kernel_width = 4;
+properties.gridding.oversampling_factor = data.overgrid_factor;
+properties.gridding.kernel_width = 5;
 properties.visualization_level = 1;
 properties.do_sense_recon = 1;
 properties.n_iterations = 10;

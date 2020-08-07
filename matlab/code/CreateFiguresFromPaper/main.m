@@ -5,8 +5,8 @@
 
 %% Setup Data and Results paths
 % NOTE: Adapt data paths to folder containing the h5 files
-pathDataBrain   = '../../../../data_RRSG/Brain';
-pathDataHeart   = '../../../../data_RRSG/Heart';
+pathDataBrain   = '../../../../CGSENSE_challenge_sub/data/rawdata_brain_radial_96proj_12ch.h5';
+pathDataHeart   = '../../../../CGSENSE_challenge_sub/data/rawdata_heart_radial_55proj_34ch.h5';
 pathResults     = 'results'; % path where results figures shall be stored
 
 % create path for results

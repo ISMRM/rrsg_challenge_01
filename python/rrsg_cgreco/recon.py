@@ -1,26 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Apr 1 2019
-
-@author: omaier
-
-Copyright 2019 Oliver Maier
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
-
-
+"""Main skript to run CG SENSE."""
 import numpy as np
 import os
 import h5py
@@ -39,7 +19,8 @@ DTYPE_real = np.float32
 
 def _get_args(
       configfile='.'+os.sep+'python'+os.sep+'default',
-      pathtofile='.'+os.sep+'data'+os.sep+'rawdata_brain_radial_96proj_12ch.h5',
+      pathtofile=(
+          '.'+os.sep+'data'+os.sep+'rawdata_brain_radial_96proj_12ch.h5'),
       undersampling_factor=1
       ):
     """
@@ -145,6 +126,7 @@ def read_data(
         noise_key (string):
             Name of the noise reference array in the .h5 file.
             defaults to "noise"
+
     Retruns
     -------
         rawdata (np.complex64):
@@ -158,6 +140,7 @@ def read_data(
         Coils (np.complex64):
             If available, read in complex coil senstivity profiles.
             Defaults to None.
+
     Raises
     ------
          ValueError:
@@ -208,8 +191,25 @@ def read_data(
     # Squeeze dummy dimension and transpose to C-style ordering.
     rawdata = np.squeeze(rawdata.T)
 
-    # Normalize trajectory to the range of (-1/2)/(1/2)
-    image_dim = int(np.ceil(2 * np.max(np.abs(trajectory))))
+    # Derive image dimension and overgridfactor from trajectory
+    center_out_scale = 1
+    if np.allclose(np.round(trajectory[:, 0, :]), 0):
+        print("k-space seems measured center out.")
+        center_out_scale = 2
+
+    image_dim = int(
+        center_out_scale *
+        np.max(
+            np.linalg.norm(
+                trajectory[:, -1, :] - trajectory[:, 0, :], axis=0
+                )
+            )
+        )
+
+    if np.mod(image_dim, 2):
+        print("Uneven image dimension: "+str(image_dim)+", increasing by 1.")
+        image_dim += 1
+
     overgrid_factor_a = 1/np.linalg.norm(
         trajectory[:, -2, 0]-trajectory[:, -1, 0])
     overgrid_factor_b = 1/np.linalg.norm(
@@ -292,7 +292,7 @@ def setup_parameter_dict(
                     parameter[section_key][value_key] = config.getboolean(
                         section_key,
                         value_key)
-                except:
+                except ValueError:
                     parameter[section_key][value_key] = config.get(
                         section_key,
                         value_key)
@@ -301,12 +301,12 @@ def setup_parameter_dict(
                     parameter[section_key][value_key] = config.getint(
                         section_key,
                         value_key)
-                except:
+                except ValueError:
                     try:
                         parameter[section_key][value_key] = config.getfloat(
                             section_key,
                             value_key)
-                    except:
+                    except ValueError:
                         parameter[section_key][value_key] = config.get(
                             section_key,
                             value_key)
@@ -341,56 +341,35 @@ def setup_parameter_dict(
             )
     return parameter
 
+
 def compute_density_compensation(parameter, trajectory):
-        """
-        Compensate for non uniform sampling density
+    """
+    Compensate for non uniform sampling density.
 
-        This function computes the sampling density via gridding of ones and
-        the correct intensity normalization of the NUFFT operator.
+    This function computes the sampling density via gridding of ones and
+    the correct intensity normalization of the NUFFT operator.
 
-        Args
-        ----
-            parameter (dict):
-                A dictionary storing reconstruction related parameters like
-               number of coils and image dimension in 2D.
-            trajectory (np.array):
-                The associated trajectory data
-        """
-
-        # First setup a NUFFT with the given trajectroy
-        FFT = linop.NUFFT(par=parameter,
-                          trajectory=trajectory)
-        # Extrakt the gridding matrix
-        parameter["FFT"]["gridding_matrix"] = FFT.gridding_mat
-        # Grid a k-space of all ones to get an estimated density
-        # and use it as density compensation
-        parameter["FFT"]["dens_cor"] = np.sqrt(
-            get_density_from_gridding(
-                parameter["Data"],
-                parameter["FFT"]["gridding_matrix"]
-                )
+    Args
+    ----
+        parameter (dict):
+            A dictionary storing reconstruction related parameters like
+           number of coils and image dimension in 2D.
+        trajectory (np.array):
+            The associated trajectory data
+    """
+    # First setup a NUFFT with the given trajectroy
+    FFT = linop.NUFFT(par=parameter,
+                      trajectory=trajectory)
+    # Extrakt the gridding matrix
+    parameter["FFT"]["gridding_matrix"] = FFT.gridding_mat
+    # Grid a k-space of all ones to get an estimated density
+    # and use it as density compensation
+    parameter["FFT"]["dens_cor"] = np.sqrt(
+        get_density_from_gridding(
+            parameter["Data"],
+            parameter["FFT"]["gridding_matrix"]
             )
-        # Build a new NUFFT using the correct density estimation
-        FFT = linop.NUFFT(par=parameter,
-                          trajectory=trajectory)
-
-        # Check intensity scaling of a dirac function - should be 1
-        # Perform normalization to one and add it to the density compensation
-        image_dirac = np.zeros((parameter["Data"]["image_dimension"],
-                                parameter["Data"]["image_dimension"]),
-                                dtype=parameter["Data"]["DTYPE"])
-        image_dirac[int(parameter["Data"]["image_dimension"]/2),
-                    int(parameter["Data"]["image_dimension"]/2)] = (
-                        1+1j
-                        )/np.sqrt(2)
-        impulse_response = FFT.adjoint(FFT.forward(image_dirac))
-        scale = impulse_response[0,
-                                  int(parameter["Data"]["image_dimension"]/2),
-                                  int(parameter["Data"]["image_dimension"]/2)]
-        parameter["FFT"]["dens_cor"] *= (
-            1/np.sqrt(np.abs(scale))
-            ).astype(parameter["Data"]["DTYPE_real"])
-
+        )
 
 
 def save_to_file(
@@ -455,7 +434,7 @@ def save_to_file(
 
 def _decor_noise(data, noise, par, coils=None):
     """
-    Decorrelate the data with using a given noise covariance matrix
+    Decorrelate the data with using a given noise covariance matrix.
 
     Perform prewithening with given noise data. If no data was aquired,
     the input data without modifications is returned.
@@ -502,11 +481,13 @@ def _decor_noise(data, noise, par, coils=None):
                                coilshape)
         return data, coils
 
-def save_coil_(pathtofile, undersampling_factor, par):
+
+def _save_coil_(pathtofile, undersampling_factor, par):
     name = os.path.normpath(pathtofile)
     with h5py.File(name, 'r+') as h5_dataset:
         if (undersampling_factor != 1) and ("Coils" not in h5_dataset.keys()):
-            raise ValueError("Coils should be estimated without undersampling!")
+            raise ValueError(
+                "Coils should be estimated without undersampling!")
         elif "Coils" in h5_dataset.keys():
             pass
         else:
@@ -540,8 +521,8 @@ def _run_reco(args):
         trajectory,
         parameter,
         coils=coils)
-    # Save SoS coils if not present
-    save_coil_(
+    # Save coils if not present
+    _save_coil_(
         pathtofile=args.pathtofile,
         undersampling_factor=args.undersampling_factor,
         par=parameter["Data"]
@@ -561,7 +542,6 @@ def _run_reco(args):
     recon_result, residuals = cgs.optimize(
         data=kspace_data * parameter["FFT"]["dens_cor"]
         )
-
 
     # Single Coil images after FFT
     single_coil_images = cgs.operator.NUFFT.adjoint(

@@ -2,13 +2,13 @@
 
 %% Load Data
 % Put in folder containing the h5 files, i.e.
-pathData = '../../../data_RRSG/Spiral';
+pathData = '../../../CGSENSE_challenge_sub/data/cardiac_radial_KI.h5';
 data = loadData(pathData);
 % data.Nimg = 240;
 %% Set up properties
 properties.image_dim                    = data.Nimg;    % Number of voxels (assumes quadratic images)
-properties.gridding.oversampling_factor = 2;            % Gridding oversampling factor
-properties.gridding.kernel_width        = 4;            % Gridding kernel width as a multiple of dk without oversampling
+properties.gridding.oversampling_factor = data.overgrid_factor;            % Gridding oversampling factor
+properties.gridding.kernel_width        = 5;            % Gridding kernel width as a multiple of dk without oversampling
 properties.do_sense_recon               = 1;            % 1 = Perform recon with SENSE maps; 0 = No sense maps used; basically iterative gridding+FFT (density-compensation)
 properties.undersampling_factor         = 1;            % undersampling or acceleration factor (R), determines how fraction (1/R) of full data is used in reconstruction
 properties.n_iterations                 = 10;            % Number of CG iterations
@@ -17,7 +17,7 @@ properties.n_iterations                 = 10;            % Number of CG iteratio
 % 1 = Plot current image after each CG iteration? 
 % 2 = Plot diagnostics/aux data (sense map, k-space filter, intensity
 %     correction)
-properties.visualization_level          = 1; 
+properties.visualization_level          = 1;
 
 %% Reconstruct Image
 out = CGSense(data, properties);
@@ -39,3 +39,10 @@ dataTmp.sense.noiseCovarianceMatrix = 1; % ignore noise covariance
 dataTmp.signal = data.signal(:,:,1);
 dataTmp.nCoils = 1;
 outSingle = CGSense(dataTmp, properties);
+
+
+%% Save results
+initial = out.imagesIterSteps{1};
+final = out.imageComb;
+singleCoil = outSingle.imageComb;
+save('result_cardiac.mat' , 'initial', 'final', 'singleCoil');

@@ -1,10 +1,10 @@
 [Data]
-precision = single
+precision = double
 do_intensity_scale = 1
 do_density_correction = 1
 
 [FFT]
-kernelwidth = 9
+kernelwidth = 5
 kernellength = 10000
 
 [Optimizer]

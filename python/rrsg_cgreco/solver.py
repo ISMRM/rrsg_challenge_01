@@ -1,24 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Apr 1 2019
-
-@author: omaier
-Copyright 2019 Oliver Maier
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
-
+"""The CG algorithm for image reconstruction."""
 import numpy as np
 import time
 
@@ -178,34 +160,34 @@ class CGReco:
         gridmask[gridmask < 1] = 0
         gridmask = ~gridmask.astype(bool)
         gridcenter = self.operator.grid_size / 2
-        for j in range(x.shape[0]):
-            tmp = np.zeros(
-                (
-                    self.operator.grid_size,
-                    self.operator.grid_size),
-                dtype=self.operator.DTYPE
-                )
 
-            tmp[
-                ...,
-                int(gridcenter-self.image_dim/2):
-                    int(gridcenter+self.image_dim/2),
-                int(gridcenter-self.image_dim/2):
-                    int(gridcenter+self.image_dim/2)
-                ] = x[j]
+        tmp = np.zeros(
+            (
+                x.shape[0],
+                self.operator.grid_size,
+                self.operator.grid_size),
+            dtype=self.operator.DTYPE
+            )
+        tmp[
+            ...,
+            int(gridcenter-self.image_dim/2):
+                int(gridcenter+self.image_dim/2),
+            int(gridcenter-self.image_dim/2):
+                int(gridcenter+self.image_dim/2)
+            ] = x
 
-            tmp = np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(
-                np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(
-                        tmp, (-2, -1)), norm='ortho'),
-                        (-2, -1))*gridmask, (-2, -1)),
-                        norm='ortho'), (-2, -1))
-            x[j] = tmp[
-                ...,
-                int(gridcenter-self.image_dim/2):
-                    int(gridcenter+self.image_dim/2),
-                int(gridcenter-self.image_dim/2):
-                    int(gridcenter+self.image_dim/2)
-                ]
+        tmp = np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(
+            np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(
+                    tmp, (-2, -1)), norm='ortho'),
+                    (-2, -1))*gridmask, (-2, -1)),
+                    norm='ortho'), (-2, -1))
+        x = tmp[
+            ...,
+            int(gridcenter-self.image_dim/2):
+                int(gridcenter+self.image_dim/2),
+            int(gridcenter-self.image_dim/2):
+                int(gridcenter+self.image_dim/2)
+            ]
         return x
 
 ###############################################################################
@@ -334,6 +316,7 @@ class CGReco:
             if delta < tol:
                 print("\nConverged after %i iterations to %1.3e." %
                       (i+1, delta))
+                x[0] = b
                 return x[:i+1, ...]
             if not np.mod(i, 1):
                 print("Residuum at iter %i : %1.3e" % (i+1, delta), end='\r')
@@ -342,4 +325,5 @@ class CGReco:
                     np.vdot(residual, residual))
             p = residual_new + beta * p
             (residual, residual_new) = (residual_new, residual)
+        x[0] = b
         return x

@@ -68,16 +68,16 @@ end
 % Calculate the kernel extend on Cartesian grid for each sampled
 % non-Cartesian location
 
-iMin = floor((Traj-kwidth)*N + N/2+1);
-iMax = floor((Traj+kwidth)*N + N/2+1);
+iMin = floor((Traj-kwidth) + N/2+1);
+iMax = floor((Traj+kwidth) + N/2+1);
 
 
 for k = 1:nSamples
     for x = iMin(1,k):iMax(1,k)
-        dkx = (x - (N/2+1))/N - Traj(1,k);
+        dkx = (x - (N/2+1)) - Traj(1,k);
         
         for y = iMin(2,k):iMax(2,k)
-            dky = (y - (N/2+1))/N - Traj(2,k);
+            dky = (y - (N/2+1)) - Traj(2,k);
             
             dk = sqrt(dkx.^2+dky.^2);
             

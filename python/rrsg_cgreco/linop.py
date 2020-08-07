@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
-""" Linear operators for MRI image reconstruction."""
-
+"""Linear operators for MRI image reconstruction."""
 import numpy as np
 from rrsg_cgreco._helper_fun.calckbkernel import calculate_keiser_bessel_kernel
 from abc import ABC, abstractmethod
@@ -219,11 +217,13 @@ class NUFFT(Operator):
         by a 2D fft, implemented in numpy and final deapodization to
         compensate for the convolution of the gridding kernel on the data.
 
-        Args:
+        Args
+        ----
             inp (Numpy.Array):
                 The input data do be transformed
 
-        Returns:
+        Returns
+        -------
             Numpy.Array
                 The resulting image from non-uniform data
 
@@ -256,11 +256,13 @@ class NUFFT(Operator):
         applying the deapodization followed by fourier transformation and
         finally resampling of the cartesian data to the non-uniform trajectory.
 
-        Args:
+        Args
+        ----
             inp (Numpy.Array):
                 The image to be transformed to the non-uniform k-space
 
-        Returns:
+        Returns
+        -------
             Numpy.Array:
                 The non-uniform k-space derived from inp
 

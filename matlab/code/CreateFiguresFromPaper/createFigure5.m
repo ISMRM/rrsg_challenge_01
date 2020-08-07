@@ -28,10 +28,9 @@ RArray = [1 2 3 4];
 nR = numel(RArray);
 dataIn = data;
 
-data.Nimg = 300;
 properties.image_dim = data.Nimg;             % For the phantom it should be 152, 340 for brain, 360 for heart
-properties.gridding.oversampling_factor = 1.7033398310591292;  % Gridding oversampling factor
-properties.gridding.kernel_width = 4;         % Gridding kernel width as a multiple of dk without oversampling
+properties.gridding.oversampling_factor = data.overgrid_factor;  % Gridding oversampling factor
+properties.gridding.kernel_width = 5;         % Gridding kernel width as a multiple of dk without oversampling
 properties.visualization_level = 1;
 
 %% Compute single coil recons w/o SENSE (left column of plot) and SENSE recons%
@@ -61,7 +60,7 @@ for iR = 1:nR
 end
 save('result_brain.mat','outSingle','outSense');
 %% Create Subplots for figure
-bestIteration = [5 5 5 5];
+bestIteration = [10 10 10 10];
 for iR = 1:nR
     R = RArray(iR);
     
