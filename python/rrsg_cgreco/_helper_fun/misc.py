@@ -1,4 +1,3 @@
-
 """
 This file contains misc functions that are used throughout the project...
 """

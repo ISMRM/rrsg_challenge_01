@@ -1,24 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Apr 1 2019
-
-@author: omaier
-Copyright 2019 Oliver Maier
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
-
+"""The CG algorithm for image reconstruction."""
 import numpy as np
 import time
 
@@ -60,7 +42,7 @@ class CGReco:
         operator (linop.Operator):
             MRI imaging operator to traverse from k-space to imagespace and
             vice versa.
-            
+
     """
 
     def __init__(self, data_par, optimizer_par):
@@ -71,7 +53,7 @@ class CGReco:
         ----
             data_par (dict):
                 A python dict containing the necessary information to
-                setup the object. Needs to contain the image dimensions 
+                setup the object. Needs to contain the image dimensions
                 (img_dim), number of coils (num_coils),
                 sampling points (num_reads) and read outs (num_proj) and the
                 complex coil sensitivities (Coils).
@@ -79,22 +61,21 @@ class CGReco:
                 Parameter containing the optimization related settings.
 
         """
-        self.image_dim = data_par["image_dim"]
+        self.image_dim = data_par["image_dimension"]
         self.num_coils = data_par["num_coils"]
+        self.mask = data_par["mask"]
 
         self.DTYPE = data_par["DTYPE"]
         self.DTYPE_real = data_par["DTYPE_real"]
 
         self.do_incor = data_par["do_intensity_scale"]
         self.incor = data_par["in_scale"].astype(self.DTYPE)
-        
-        self.maxit=optimizer_par["max_iter"]
-        self.lambd=optimizer_par["lambda"]
-        self.tol=optimizer_par["tolerance"]
+        self.maxit = optimizer_par["max_iter"]
+        self.lambd = optimizer_par["lambda"]
+        self.tol = optimizer_par["tolerance"]
 
         self.res = []
         self.operator = None
-        
 
     def set_operator(self, op):
         """
@@ -155,9 +136,9 @@ class CGReco:
 
     def kspace_filter(self, x):
         """
-        Performs k-space filtering.
+        Perform k-space filtering.
 
-        This function filters out k-space points outside the acquired 
+        This function filters out k-space points outside the acquired
         trajectory, setting the corresponding k-space position to 0.
 
         Args
@@ -170,43 +151,43 @@ class CGReco:
             numpy.Array: Filtered image-space data.
         """
         print("Performing k-space filtering")
-        kpoints = (np.arange(-np.floor(self.operator.num_reads/2),
-                            np.ceil(self.operator.num_reads/2))
-                   )/self.operator.num_reads
-        xx, yy = np.meshgrid(kpoints,kpoints)
+        kpoints = (np.arange(-np.floor(self.operator.grid_size/2),
+                             np.ceil(self.operator.grid_size/2))
+                   )/self.operator.grid_size
+        xx, yy = np.meshgrid(kpoints, kpoints)
         gridmask = np.sqrt(xx**2+yy**2)
-        gridmask[np.abs(gridmask)>0.5] = 1
-        gridmask[gridmask<1] = 0
+        gridmask[np.abs(gridmask) > 0.5] = 1
+        gridmask[gridmask < 1] = 0
         gridmask = ~gridmask.astype(bool)
-        gridcenter = self.operator.num_reads / 2
-        for j in range(x.shape[0]):
-            tmp = np.zeros(
-                (
-                    self.operator.num_reads,
-                    self.operator.num_reads),
-                dtype=self.operator.DTYPE
-                )
+        gridcenter = self.operator.grid_size / 2
 
-            tmp[
-                ...,
-                int(gridcenter-self.image_dim/2):
-                    int(gridcenter+self.image_dim/2),
-                int(gridcenter-self.image_dim/2):
-                    int(gridcenter+self.image_dim/2)
-                ] = x[j]
+        tmp = np.zeros(
+            (
+                x.shape[0],
+                self.operator.grid_size,
+                self.operator.grid_size),
+            dtype=self.operator.DTYPE
+            )
+        tmp[
+            ...,
+            int(gridcenter-self.image_dim/2):
+                int(gridcenter+self.image_dim/2),
+            int(gridcenter-self.image_dim/2):
+                int(gridcenter+self.image_dim/2)
+            ] = x
 
-            tmp = np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(
-                np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(
-                        tmp, (-2, -1)), norm='ortho'),
-                        (-2, -1))*gridmask, (-2, -1)),
-                        norm='ortho'), (-2, -1))
-            x[j] = tmp[
-                ...,
-                int(gridcenter-self.image_dim/2):
-                    int(gridcenter+self.image_dim/2),
-                int(gridcenter-self.image_dim/2):
-                    int(gridcenter+self.image_dim/2)
-                ]
+        tmp = np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(
+            np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(
+                    tmp, (-2, -1)), norm='ortho'),
+                    (-2, -1))*gridmask, (-2, -1)),
+                    norm='ortho'), (-2, -1))
+        x = tmp[
+            ...,
+            int(gridcenter-self.image_dim/2):
+                int(gridcenter+self.image_dim/2),
+            int(gridcenter-self.image_dim/2):
+                int(gridcenter+self.image_dim/2)
+            ]
         return x
 
 ###############################################################################
@@ -265,7 +246,7 @@ class CGReco:
         print("Elapsed time: %f seconds" % (end))
         print("-"*80)
         if self.do_incor:
-            result *= self.incor
+            result = self.mask*result/self.incor
         return (self.kspace_filter(result), self.res)
 
 ###############################################################################
@@ -333,7 +314,9 @@ class CGReco:
             delta = np.linalg.norm(residual_new) ** 2 / np.linalg.norm(b) ** 2
             self.res.append(delta)
             if delta < tol:
-                print("\nConverged after %i iterations to %1.3e." % (i+1, delta))
+                print("\nConverged after %i iterations to %1.3e." %
+                      (i+1, delta))
+                x[0] = b
                 return x[:i+1, ...]
             if not np.mod(i, 1):
                 print("Residuum at iter %i : %1.3e" % (i+1, delta), end='\r')
@@ -342,4 +325,5 @@ class CGReco:
                     np.vdot(residual, residual))
             p = residual_new + beta * p
             (residual, residual_new) = (residual_new, residual)
+        x[0] = b
         return x

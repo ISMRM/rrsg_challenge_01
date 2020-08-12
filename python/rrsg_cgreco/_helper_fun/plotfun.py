@@ -1,5 +1,4 @@
 # encoding: utf-8
-
 import math
 import numpy as np
 from matplotlib import pyplot as plt, gridspec as gridspec

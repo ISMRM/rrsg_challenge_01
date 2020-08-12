@@ -1,36 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Jul 17 12:05:45 2018
-
-@author: omaier
-
-Copyright 2019 Oliver Maier
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
-"""
-
 import warnings
 import numpy as np
 from rrsg_cgreco._helper_fun.kb import kaiser_bessel
 
 
 def calculate_keiser_bessel_kernel(
-        kernelwidth, 
-        overgridfactor, 
-        gridsize, 
-        kernellength=32, 
+        kernelwidth,
+        overgridfactor,
+        gridsize,
+        kernellength=32,
         **kwargs):
     """
     Calculate the appropriate Kaiser-Bessel gridding kernel.
@@ -42,7 +21,7 @@ def calculate_keiser_bessel_kernel(
     Args
     ----
         kernelwidth (int):
-            kernel width in grid samples.
+            kernel width
         overgridfactor (float):
             over-gridding factor.
         gridsize (int):
@@ -59,7 +38,7 @@ def calculate_keiser_bessel_kernel(
             normalized Fourier transform of kernel used for deapodization
         kbu:
             position of sampling points of kernel.
-            linspace from 0 to length of kernel in grid units
+            linspace from 0 to length of kernel
 
     """
     if kernellength < 2:
@@ -72,59 +51,41 @@ def calculate_keiser_bessel_kernel(
     # Rapid Gridding Reconstruction With a Minimal Oversampling Ratio -
     # equation [5]
     beta = np.pi * np.sqrt(
-        (kernelwidth / overgridfactor) ** 2 
-        * (overgridfactor - 0.5) ** 2 
+        (kernelwidth / overgridfactor) ** 2
+        * (overgridfactor - 0.5) ** 2
         - 0.8
         )
+    # Kernel radii.
+    u = np.linspace(
+        0,
+        (kernelwidth/2),
+        int(np.ceil(kernellength*kernelwidth/2)))
 
-    # Kernel radii - grid samples.
-    u = (
-        np.linspace(
-            0,
-            np.floor(
-                kernellength * kernelwidth / 2
-                ),
-            int(
-                np.ceil(
-                    kernellength * kernelwidth / 2
-                    )
-                )
-            ) /
-        (
-            np.floor(
-                kernellength * kernelwidth / 2
-                )
-            )
-        * kernelwidth / 2 / gridsize
-        )
-
-    kern = kaiser_bessel(u, kernelwidth, beta, gridsize)
+    kern = kaiser_bessel(u, kernelwidth, beta)
     kern = kern / kern[u == 0]  # Normalize.
-     
+
     ft_y = np.flip(kern)
-    ft_y = np.concatenate((ft_y[:-1], kern))
-    ft_y = np.pad(
-        ft_y, 
-        int((gridsize * kernellength - ft_y.size) / 2),
-        'constant'
-        )
+    if np.mod(kernelwidth, 2):
+        ft_y = np.concatenate((ft_y[:-1], kern))
+    else:
+        ft_y = np.concatenate((ft_y, kern))
+
     ft_y = np.abs(
       np.fft.fftshift(
           np.fft.ifft(
-              np.fft.ifftshift(
-                  ft_y
-                  )
+                  ft_y, gridsize * kernellength
               )
           )
       * ft_y.size
       )
+
     x = np.linspace(
-        -int(gridsize/(2*overgridfactor)), 
-        int(gridsize/(2*overgridfactor))-1, 
-        int(gridsize/(overgridfactor))
+        -int(np.floor(gridsize/(2*overgridfactor))),
+        int(np.floor(gridsize/(2*overgridfactor)))-1,
+        int(np.floor(gridsize/(overgridfactor)))
         )
 
-    ft_y = ft_y[(ft_y.size / 2 - x).astype(int)]
+    ft_y = ft_y[(ft_y.size / 2 + x).astype(int)]
     h = np.sinc(x / (gridsize * kernellength)) ** 2
 
     kern_ft = ft_y * h

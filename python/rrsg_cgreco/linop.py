@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
-""" Linear operators for MRI image reconstruction."""
-
+"""Linear operators for MRI image reconstruction."""
 import numpy as np
 from rrsg_cgreco._helper_fun.calckbkernel import calculate_keiser_bessel_kernel
 from abc import ABC, abstractmethod
@@ -22,8 +20,10 @@ class Operator(ABC):
     ----------
         num_coils (int):
             Number of complex coils
-        image_dim (int):
+        image_dimension (int):
             Dimension of the parameter maps. Assumed to be square
+        grid_size (int):
+            Size of oversampled grid
         num_reads (int):
             Number of samples per readout
         num_proj (int):
@@ -42,8 +42,8 @@ class Operator(ABC):
         ----
             data_par (dict):
                 A python dict containing the necessary information to
-                setup the object. Needs to contain the image dimensions 
-                (image_dim),
+                setup the object. Needs to contain the image dimensions
+                (image_dimension),
                 number of coils (num_coils),
                 sampling points (num_reads) and read outs (num_proj).
                 (Optional) content of the data_par (dict) is the DTYPE and
@@ -51,15 +51,17 @@ class Operator(ABC):
                 np.complex64 and np.float32 respectively.
         """
         # Test whether the given dictionary contains the desired keys
-        necessary_keys = ['image_dim', 'num_coils', 'num_reads', 'num_proj']
+        necessary_keys = ['image_dimension', 'num_coils',
+                          'num_reads', 'num_proj']
         necessary_test = [x in data_par for x in necessary_keys]
         if not all(necessary_test):
-            false_index = [i for i, x in 
-                           enumerate(necessary_test) if x == False]
+            false_index = [i for i, x in
+                           enumerate(necessary_test) if x is False]
             missing_keys = [necessary_keys[i] for i in false_index]
             raise ValueError('Missing keys ', missing_keys)
 
-        self.image_dim = data_par["image_dim"]
+        self.image_dim = data_par["image_dimension"]
+        self.grid_size = data_par["grid_size"]
         self.num_reads = data_par["num_reads"]
         self.num_coils = data_par["num_coils"]
         self.num_proj = data_par["num_proj"]
@@ -136,7 +138,7 @@ class NUFFT(Operator):
         overgridfactor (float):
             The over-gridding factor for non-cartesian k-spaces.
         fft_scale (float32):
-            The scaling factor to achieve a good adjointness of the forward 
+            The scaling factor to achieve a good adjointness of the forward
             and backward FFT.
         kerneltable (Numpy.Array):
             The gridding lookup table
@@ -166,23 +168,23 @@ class NUFFT(Operator):
         Args
         ----
             par (dict):
-                Contains the Data related dictionary "Data" and FFT parameter 
-                related parameter "FFT" dictionaries. 
+                Contains the Data related dictionary "Data" and FFT parameter
+                related parameter "FFT" dictionaries.
             trajectory (numpy.array):
-                Trajectory information for kx/ky/kz points. Expects a shape of 
+                Trajectory information for kx/ky/kz points. Expects a shape of
                 (num_scans, num_proj, 3)
             fft_dim (tuple):
                 A tuple containing the axes over which the Fourier Transform
                 is performed.
         """
         super().__init__(par["Data"])
-        
+
         self.overgridfactor = par["Data"]["overgridfactor"]
 
         (self.kerneltable, kerneltable_FT, u) = calculate_keiser_bessel_kernel(
             par["FFT"]["kernelwidth"],
             self.overgridfactor,
-            par["Data"]["num_reads"],
+            par["Data"]["grid_size"],
             par["FFT"]["kernellength"])
 
         deapodization = 1 / kerneltable_FT.astype(self.DTYPE_real)
@@ -198,8 +200,7 @@ class NUFFT(Operator):
         self.trajectory = trajectory
 
         self.n_kernel_points = self.kerneltable.size
-        self.grid_size = par["Data"]["num_reads"]
-        self.kwidth = (par["FFT"]["kernelwidth"] / 2) / self.grid_size
+        self.kwidth = (par["FFT"]["kernelwidth"] / 2)
         self.fft_dim = fft_dim
         if "gridding_matrix" in par["FFT"].keys():
             self.gridding_mat = par["FFT"]["gridding_matrix"]
@@ -216,21 +217,26 @@ class NUFFT(Operator):
         by a 2D fft, implemented in numpy and final deapodization to
         compensate for the convolution of the gridding kernel on the data.
 
-        Args:
-            inp:
+        Args
+        ----
+            inp (Numpy.Array):
+                The input data do be transformed
 
-        Returns:
+        Returns
+        -------
+            Numpy.Array
+                The resulting image from non-uniform data
 
         """
         # Perform density compensation
         denscor_inp = inp * self.dens_comp
         # Grid k-space
         ogkspace = np.zeros(
-            (self.num_coils, self.grid_size, self.grid_size), 
+            (self.num_coils, self.grid_size, self.grid_size),
             dtype=self.DTYPE)
         for nc in range(self.num_coils):
             ogkspace[nc] = np.reshape(
-                self.gridding_mat_adj.dot(denscor_inp[nc].flatten()), 
+                self.gridding_mat_adj.dot(denscor_inp[nc].flatten()),
                 (self.grid_size, self.grid_size)
                 )
 
@@ -238,6 +244,7 @@ class NUFFT(Operator):
         ogkspace = np.fft.ifftshift(ogkspace, axes=self.fft_dim)
         ogkspace = np.fft.ifft2(ogkspace, norm='ortho')
         ogkspace = np.fft.ifftshift(ogkspace, axes=self.fft_dim)
+
         # Deapodization and Scaling
         return self._deapo_adj(ogkspace)
 
@@ -249,10 +256,15 @@ class NUFFT(Operator):
         applying the deapodization followed by fourier transformation and
         finally resampling of the cartesian data to the non-uniform trajectory.
 
-        Args:
-            inp:
+        Args
+        ----
+            inp (Numpy.Array):
+                The image to be transformed to the non-uniform k-space
 
-        Returns:
+        Returns
+        -------
+            Numpy.Array:
+                The non-uniform k-space derived from inp
 
         """
         # Deapodization and Scaling
@@ -264,12 +276,12 @@ class NUFFT(Operator):
 
         # Resample on Spoke
         kspace = np.zeros(
-            (self.num_coils, self.num_proj, self.num_reads), 
+            (self.num_coils, self.num_proj, self.num_reads),
             dtype=self.DTYPE
             )
         for nc in range(self.num_coils):
             kspace[nc] = np.reshape(
-                self.gridding_mat.dot(ogkspace[nc].flatten()), 
+                self.gridding_mat.dot(ogkspace[nc].flatten()),
                 (self.num_proj, self.num_reads)
                 )
         # Perform density compensation
@@ -287,6 +299,7 @@ class NUFFT(Operator):
             ] * self.deapodization
 
     def _deapo_fwd(self, inp):
+
         gridcenter = self.grid_size / 2
 
         out = np.zeros(
@@ -328,19 +341,19 @@ class NUFFT(Operator):
             temp_mapping = []  # Here for demonstration purposes.
             temp_mapping.append((iread, iproj))
 
-            kx = self.trajectory[iproj, iread, 1]
-            ky = self.trajectory[iproj, iread, 0]
+            kx = self.trajectory[iproj, iread, 1]*self.overgridfactor
+            ky = self.trajectory[iproj, iread, 0]*self.overgridfactor
 
-            ixmin = int((kx - self.kwidth) * self.grid_size + gridcenter)
-            ixmax = int((kx + self.kwidth) * self.grid_size + gridcenter) + 1
-            iymin = int((ky - self.kwidth) * self.grid_size + gridcenter)
-            iymax = int((ky + self.kwidth) * self.grid_size + gridcenter) + 1
+            ixmin = int((kx - self.kwidth) + gridcenter)
+            ixmax = int((kx + self.kwidth) + gridcenter) + 1
+            iymin = int((ky - self.kwidth) + gridcenter)
+            iymax = int((ky + self.kwidth) + gridcenter) + 1
 
             for gcount1 in np.arange(ixmin, ixmax+1):
-                dkx = (gcount1 - gridcenter) / self.grid_size - kx
+                dkx = (gcount1 - gridcenter) - kx
 
                 for gcount2 in np.arange(iymin, iymax+1):
-                    dky = (gcount2 - gridcenter) / self.grid_size - ky
+                    dky = (gcount2 - gridcenter) - ky
                     dk = np.sqrt(dkx ** 2 + dky ** 2)
 
                     if dk < self.kwidth:
@@ -371,9 +384,9 @@ class NUFFT(Operator):
                         if gcount2 >= self.grid_size:
                             indy -= self.grid_size
                             indx = self.grid_size - indx
-                            
+
                         # Here for demonstration purposes
-                        temp_mapping.append((indx, indy))  
+                        temp_mapping.append((indx, indy))
 
                         sg[:, indy, indx] += (
                             kern * kdat[
@@ -383,7 +396,7 @@ class NUFFT(Operator):
                                 ]
                             )
             # Here for demonstration purposes
-            grid_point_mapping.append(temp_mapping)  
+            grid_point_mapping.append(temp_mapping)
 
         if return_mapping:
             return sg, grid_point_mapping
@@ -407,19 +420,19 @@ class NUFFT(Operator):
                 range(self.num_reads)
                 ):
 
-            kx = self.trajectory[iproj, ismpl, 1]
-            ky = self.trajectory[iproj, ismpl, 0]
+            kx = self.trajectory[iproj, ismpl, 1]*self.overgridfactor
+            ky = self.trajectory[iproj, ismpl, 0]*self.overgridfactor
 
-            ixmin = int((kx - self.kwidth) * self.grid_size + gridcenter)
-            ixmax = int((kx + self.kwidth) * self.grid_size + gridcenter) + 1
-            iymin = int((ky - self.kwidth) * self.grid_size + gridcenter)
-            iymax = int((ky + self.kwidth) * self.grid_size + gridcenter) + 1
+            ixmin = int((kx - self.kwidth) + gridcenter)
+            ixmax = int((kx + self.kwidth) + gridcenter) + 1
+            iymin = int((ky - self.kwidth) + gridcenter)
+            iymax = int((ky + self.kwidth) + gridcenter) + 1
 
             for gcount1 in np.arange(ixmin, ixmax+1):
-                dkx = (gcount1 - gridcenter) / self.grid_size - kx
+                dkx = (gcount1 - gridcenter) - kx
 
                 for gcount2 in np.arange(iymin, iymax+1):
-                    dky = (gcount2 - gridcenter) / self.grid_size - ky
+                    dky = (gcount2 - gridcenter) - ky
                     dk = np.sqrt(dkx ** 2 + dky ** 2)
                     if dk < self.kwidth:
 
@@ -455,77 +468,76 @@ class NUFFT(Operator):
         return s * self.dens_comp
 
     def _generate_gridding_matrix(self):
-            gridcenter = self.grid_size / 2
-    
-            rowind = []
-            colind = []
-            value = []
-            for iproj, ismpl in itertools.product(
-                    range(self.num_proj),
-                    range(self.num_reads)
-                    ):
-    
-                kx = self.trajectory[iproj, ismpl, 1]
-                ky = self.trajectory[iproj, ismpl, 0]
-    
-                ixmin = int(
-                    (kx - self.kwidth) 
-                    * self.grid_size + gridcenter
-                    )
-                ixmax = int(
-                    (kx + self.kwidth) 
-                    * self.grid_size + gridcenter
-                    ) + 1
-                iymin = int(
-                    (ky - self.kwidth) 
-                    * self.grid_size + gridcenter
-                    )
-                iymax = int(
-                    (ky + self.kwidth) 
-                    * self.grid_size + gridcenter
-                    ) + 1
+        gridcenter = self.grid_size / 2
 
-                for gcount1 in np.arange(ixmin, ixmax+1):
-                    dkx = (gcount1 - gridcenter) / self.grid_size - kx
-                    for gcount2 in np.arange(iymin, iymax+1):
-                        dky = (gcount2 - gridcenter) / self.grid_size - ky
-                        dk = np.sqrt(dkx ** 2 + dky ** 2)
-                        if dk < self.kwidth:
-                            fracind = (dk / self.kwidth 
-                                       * (self.n_kernel_points - 1))
-                            kernelind = int(fracind)
-                            fracdk = fracind - kernelind
-                            kern = (
-                                self.kerneltable[kernelind] * (1 - fracdk) +
-                                self.kerneltable[kernelind + 1] * fracdk
-                                )
-                            indx = gcount1
-                            indy = gcount2
-    
-                            if gcount1 < 0:
-                                indx += self.grid_size
-                                indy = self.grid_size - indy
-                            if gcount1 >= self.grid_size:
-                                indx -= self.grid_size
-                                indy = self.grid_size - indy
-                            if gcount2 < 0:
-                                indy += self.grid_size
-                                indx = self.grid_size - indx
-                            if gcount2 >= self.grid_size:
-                                indy -= self.grid_size
-                                indx = self.grid_size - indx
-                                
-                            rowind.append(iproj*self.num_reads+ismpl)
-                            colind.append(indy*self.grid_size+indx)
-                            value.append(kern)
+        rowind = []
+        colind = []
+        value = []
+        for iproj, ismpl in itertools.product(
+                range(self.num_proj),
+                range(self.num_reads)
+                ):
 
-          
-            gridmat = scipy.sparse.coo_matrix(
-                (value, (rowind, colind)), 
-                shape=(self.num_proj*self.num_reads,
-                       self.grid_size**2))
-            gridmat = gridmat.tocsc()
-            return gridmat               
+            kx = self.trajectory[iproj, ismpl, 1]*self.overgridfactor
+            ky = self.trajectory[iproj, ismpl, 0]*self.overgridfactor
+
+            ixmin = int(
+                (kx - self.kwidth)
+                + gridcenter
+                )
+            ixmax = int(
+                (kx + self.kwidth)
+                + gridcenter
+                ) + 1
+            iymin = int(
+                (ky - self.kwidth)
+                + gridcenter
+                )
+            iymax = int(
+                (ky + self.kwidth)
+                + gridcenter
+                ) + 1
+
+            for gcount1 in np.arange(ixmin, ixmax+1):
+                dkx = (gcount1 - gridcenter) - kx
+                for gcount2 in np.arange(iymin, iymax+1):
+                    dky = (gcount2 - gridcenter) - ky
+                    dk = np.sqrt(dkx ** 2 + dky ** 2)
+                    if dk < self.kwidth:
+                        fracind = (dk / self.kwidth
+                                   * (self.n_kernel_points - 1))
+                        kernelind = int(fracind)
+                        fracdk = fracind - kernelind
+                        kern = (
+                            self.kerneltable[kernelind] * (1 - fracdk) +
+                            self.kerneltable[kernelind + 1] * fracdk
+                            )
+                        indx = gcount1
+                        indy = gcount2
+
+                        if gcount1 < 0:
+                            indx += self.grid_size
+                            indy = self.grid_size - indy
+                        if gcount1 >= self.grid_size:
+                            indx -= self.grid_size
+                            indy = self.grid_size - indy
+                        if gcount2 < 0:
+                            indy += self.grid_size
+                            indx = self.grid_size - indx
+                        if gcount2 >= self.grid_size:
+                            indy -= self.grid_size
+                            indx = self.grid_size - indx
+
+                        rowind.append(iproj*self.num_reads+ismpl)
+                        colind.append(indy*self.grid_size+indx)
+                        value.append(kern)
+
+        gridmat = scipy.sparse.coo_matrix(
+            (value, (rowind, colind)),
+            shape=(self.num_proj*self.num_reads,
+                   self.grid_size**2))
+        gridmat = gridmat.tocsc()
+        return gridmat
 
 
 class MRIImagingModel(Operator):
