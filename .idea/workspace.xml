@@ -1,9 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="BranchesTreeState">
+    <expand>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="LOCAL_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:origin" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+    </expand>
+    <select />
+  </component>
   <component name="ChangeListManager">
     <list default="true" id="ac54a33a-4b6a-46e3-8fa9-a807c1a0c46d" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/rrsg_challenge_01.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/rrsg_challenge_01.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/step_by_step_recon.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/step_by_step_recon.ipynb" afterDir="false" />
     </list>
@@ -100,12 +116,26 @@
       <workItem from="1582811842700" duration="808000" />
       <workItem from="1582875902842" duration="18247000" />
       <workItem from="1591709532140" duration="447000" />
-      <workItem from="1591709982782" duration="2098000" />
+      <workItem from="1591709982782" duration="3706000" />
+      <workItem from="1592216978224" duration="705000" />
+      <workItem from="1592556264428" duration="1328000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="2" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="WindowStateProjectService">
     <state x="771" y="310" width="424" height="484" key="FileChooserDialogImpl" timestamp="1591710116743">
@@ -116,10 +146,10 @@
       <screen x="67" y="27" width="1853" height="1053" />
     </state>
     <state x="482" y="187" key="SettingsEditor/67.27.1853.1053@67.27.1853.1053" timestamp="1591710742662" />
-    <state x="684" y="291" width="618" height="522" key="find.popup" timestamp="1591712080533">
+    <state x="684" y="291" width="847" height="522" key="find.popup" timestamp="1592556273633">
       <screen x="67" y="27" width="1853" height="1053" />
     </state>
-    <state x="684" y="291" width="618" height="522" key="find.popup/67.27.1853.1053@67.27.1853.1053" timestamp="1591712080533" />
+    <state x="684" y="291" width="847" height="522" key="find.popup/67.27.1853.1053@67.27.1853.1053" timestamp="1592556273633" />
     <state x="718" y="384" width="540" height="337" key="vcs.readOnlyHandler.ReadOnlyStatusDialog" timestamp="1591709998993">
       <screen x="67" y="27" width="1853" height="1053" />
     </state>
