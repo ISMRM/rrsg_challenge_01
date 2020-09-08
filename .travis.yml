@@ -14,4 +14,4 @@ install:
 
 script: 
   - pytest ./python/test/
-  - rrsg_cgreco 
+  - rrsg_cgreco --data testdata/rawdata_brain.h5
