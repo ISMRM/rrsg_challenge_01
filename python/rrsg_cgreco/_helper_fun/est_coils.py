@@ -23,10 +23,10 @@ def estimate_coil_sensitivities(data, trajectory, par,
 
     Args
     ----
-          coils (numpy.array):
-              Complex coil sensitivites, possibly read from File
           data (numpy.array):
               complex k-space data
+          coils (numpy.array):
+              Complex coil sensitivites, possibly read from File
           trajectory (numpy.array):
               trajectory information
           par (dict):
