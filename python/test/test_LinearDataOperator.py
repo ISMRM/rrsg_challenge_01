@@ -15,7 +15,7 @@ import h5py
 import os
 from rrsg_cgreco import linop
 from rrsg_cgreco._helper_fun.density_compensation \
-    import get_density_from_gridding 
+    import get_density_from_gridding
 
 
 DTYPE = np.complex128
@@ -27,7 +27,7 @@ def setupPar(par):
     par["Data"]["overgridfactor"] = 2
     par["Data"]["DTYPE"] = DTYPE
     par["Data"]["DTYPE_real"] = DTYPE_real
-    
+
     par["FFT"] = {}
     par["FFT"]["kernelwidth"] = 5
     par["FFT"]["kernellength"] = 5000
@@ -46,7 +46,7 @@ def setupPar(par):
         (file['real_traj'][0].astype(DTYPE_real),
          file['imag_traj'][0].astype(DTYPE_real))
         )
-    par["traj"] = np.transpose(par["traj"], (1,2,0))
+    par["traj"] = np.transpose(par["traj"], (1, 2, 0))
 
     par["Data"]["coils"] = (
         np.random.randn(
@@ -64,7 +64,7 @@ def setupPar(par):
     FFT = linop.NUFFT(par=par, trajectory=par["traj"])
     par["FFT"]["gridding_matrix"] = FFT.gridding_mat
     par["FFT"]["dens_cor"] = np.sqrt(get_density_from_gridding(
-        par["Data"], 
+        par["Data"],
         par["FFT"]["gridding_matrix"]))
 
 

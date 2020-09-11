@@ -369,21 +369,8 @@ class NUFFT(Operator):
                         indx = gcount1
                         indy = gcount2
 
-                        if gcount1 < 0:
-                            indx += self.grid_size
-                            indy = self.grid_size - indy
-
-                        if gcount1 >= self.grid_size:
-                            indx -= self.grid_size
-                            indy = self.grid_size - indy
-
-                        if gcount2 < 0:
-                            indy += self.grid_size
-                            indx = self.grid_size - indx
-
-                        if gcount2 >= self.grid_size:
-                            indy -= self.grid_size
-                            indx = self.grid_size - indx
+                        indx = np.mod(indx, self.grid_size)
+                        indy = np.mod(indy, self.grid_size)
 
                         # Here for demonstration purposes
                         temp_mapping.append((indx, indy))
