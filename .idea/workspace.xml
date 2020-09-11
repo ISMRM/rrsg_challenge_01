@@ -19,7 +19,11 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ac54a33a-4b6a-46e3-8fa9-a807c1a0c46d" name="Default Changelist" comment="" />
+    <list default="true" id="ac54a33a-4b6a-46e3-8fa9-a807c1a0c46d" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/recon.py" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/recon.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/step_by_step_recon.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/step_by_step_recon.ipynb" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -149,14 +153,30 @@
       <screen x="67" y="27" width="1853" height="1053" />
     </state>
     <state x="771" y="310" width="424" height="484" key="FileChooserDialogImpl/67.27.1853.1053@67.27.1853.1053" timestamp="1591710116743" />
+    <state width="1807" height="281" key="GridCell.Tab.0.bottom" timestamp="1599816604261">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state width="1807" height="281" key="GridCell.Tab.0.bottom/67.27.1853.1053@67.27.1853.1053" timestamp="1599816604261" />
+    <state width="1807" height="281" key="GridCell.Tab.0.center" timestamp="1599816604260">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state width="1807" height="281" key="GridCell.Tab.0.center/67.27.1853.1053@67.27.1853.1053" timestamp="1599816604260" />
+    <state width="1807" height="281" key="GridCell.Tab.0.left" timestamp="1599816604260">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state width="1807" height="281" key="GridCell.Tab.0.left/67.27.1853.1053@67.27.1853.1053" timestamp="1599816604259" />
+    <state width="1807" height="281" key="GridCell.Tab.0.right" timestamp="1599816604261">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state width="1807" height="281" key="GridCell.Tab.0.right/67.27.1853.1053@67.27.1853.1053" timestamp="1599816604261" />
     <state x="482" y="187" key="SettingsEditor" timestamp="1591710742662">
       <screen x="67" y="27" width="1853" height="1053" />
     </state>
     <state x="482" y="187" key="SettingsEditor/67.27.1853.1053@67.27.1853.1053" timestamp="1591710742662" />
-    <state x="684" y="291" width="847" height="522" key="find.popup" timestamp="1592556273633">
+    <state x="684" y="291" width="847" height="522" key="find.popup" timestamp="1599815693387">
       <screen x="67" y="27" width="1853" height="1053" />
     </state>
-    <state x="684" y="291" width="847" height="522" key="find.popup/67.27.1853.1053@67.27.1853.1053" timestamp="1592556273633" />
+    <state x="684" y="291" width="847" height="522" key="find.popup/67.27.1853.1053@67.27.1853.1053" timestamp="1599815693387" />
     <state x="718" y="384" width="540" height="337" key="vcs.readOnlyHandler.ReadOnlyStatusDialog" timestamp="1591709998993">
       <screen x="67" y="27" width="1853" height="1053" />
     </state>
