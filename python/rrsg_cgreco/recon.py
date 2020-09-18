@@ -310,6 +310,7 @@ def setup_parameter_dict(
                         parameter[section_key][value_key] = config.get(
                             section_key,
                             value_key)
+
     parameter["Data"] = {**parameter["Data"], **data_par}
     if parameter["Data"]["precision"].lower() == "single":
         parameter["Data"]["DTYPE"] = np.complex64

@@ -1,10 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="BranchesTreeState">
+    <expand>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="LOCAL_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:origin" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+    </expand>
+    <select />
+  </component>
   <component name="ChangeListManager">
     <list default="true" id="ac54a33a-4b6a-46e3-8fa9-a807c1a0c46d" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/rrsg_challenge_01.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/rrsg_challenge_01.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/_helper_fun/est_coils.py" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/_helper_fun/est_coils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/step_by_step_recon.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/step_by_step_recon.ipynb" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -75,6 +92,7 @@
       </list>
     </recent_temporary>
   </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="SvnConfiguration">
     <configuration />
   </component>
@@ -100,26 +118,65 @@
       <workItem from="1582811842700" duration="808000" />
       <workItem from="1582875902842" duration="18247000" />
       <workItem from="1591709532140" duration="447000" />
-      <workItem from="1591709982782" duration="2098000" />
+      <workItem from="1591709982782" duration="3706000" />
+      <workItem from="1592216978224" duration="705000" />
+      <workItem from="1592556264428" duration="1328000" />
+      <workItem from="1597228729779" duration="542000" />
+      <workItem from="1597766443912" duration="607000" />
+      <workItem from="1597768952767" duration="8000" />
+      <workItem from="1599050652482" duration="627000" />
+      <workItem from="1599053742639" duration="634000" />
+      <workItem from="1599056715590" duration="959000" />
+      <workItem from="1599067251818" duration="1252000" />
+      <workItem from="1599653375868" duration="1141000" />
+      <workItem from="1599808296043" duration="805000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
-    <option name="version" value="2" />
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="WindowStateProjectService">
     <state x="771" y="310" width="424" height="484" key="FileChooserDialogImpl" timestamp="1591710116743">
       <screen x="67" y="27" width="1853" height="1053" />
     </state>
     <state x="771" y="310" width="424" height="484" key="FileChooserDialogImpl/67.27.1853.1053@67.27.1853.1053" timestamp="1591710116743" />
+    <state width="1807" height="281" key="GridCell.Tab.0.bottom" timestamp="1599816604261">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state width="1807" height="281" key="GridCell.Tab.0.bottom/67.27.1853.1053@67.27.1853.1053" timestamp="1599816604261" />
+    <state width="1807" height="281" key="GridCell.Tab.0.center" timestamp="1599816604260">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state width="1807" height="281" key="GridCell.Tab.0.center/67.27.1853.1053@67.27.1853.1053" timestamp="1599816604260" />
+    <state width="1807" height="281" key="GridCell.Tab.0.left" timestamp="1599816604260">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state width="1807" height="281" key="GridCell.Tab.0.left/67.27.1853.1053@67.27.1853.1053" timestamp="1599816604259" />
+    <state width="1807" height="281" key="GridCell.Tab.0.right" timestamp="1599816604261">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state width="1807" height="281" key="GridCell.Tab.0.right/67.27.1853.1053@67.27.1853.1053" timestamp="1599816604261" />
     <state x="482" y="187" key="SettingsEditor" timestamp="1591710742662">
       <screen x="67" y="27" width="1853" height="1053" />
     </state>
     <state x="482" y="187" key="SettingsEditor/67.27.1853.1053@67.27.1853.1053" timestamp="1591710742662" />
-    <state x="684" y="291" width="618" height="522" key="find.popup" timestamp="1591712080533">
+    <state x="684" y="291" width="847" height="522" key="find.popup" timestamp="1599816767766">
       <screen x="67" y="27" width="1853" height="1053" />
     </state>
-    <state x="684" y="291" width="618" height="522" key="find.popup/67.27.1853.1053@67.27.1853.1053" timestamp="1591712080533" />
+    <state x="684" y="291" width="847" height="522" key="find.popup/67.27.1853.1053@67.27.1853.1053" timestamp="1599816767766" />
     <state x="718" y="384" width="540" height="337" key="vcs.readOnlyHandler.ReadOnlyStatusDialog" timestamp="1591709998993">
       <screen x="67" y="27" width="1853" height="1053" />
     </state>
