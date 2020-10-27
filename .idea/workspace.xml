@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="BranchesTreeState">
+    <expand>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="LOCAL_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:origin" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+    </expand>
+    <select />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="ac54a33a-4b6a-46e3-8fa9-a807c1a0c46d" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/_helper_fun/est_coils.py" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/_helper_fun/est_coils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/python/rrsg_cgreco/step_by_step_recon.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/python/rrsg_cgreco/step_by_step_recon.ipynb" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="JupyterTrust" id="c8e34d26-18c8-4406-b019-9ea890adede6" />
+  <component name="ProjectId" id="1XycWmRSP5ge10onY6LKe0SV0px" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
+    <property name="nodejs_npm_path_reset_for_default_project" value="true" />
+    <property name="nodejs_package_manager_path" value="npm" />
+    <property name="settings.editor.selected.configurable" value="preferences.keymap" />
+  </component>
+  <component name="PyConsoleOptionsProvider">
+    <option name="myPythonConsoleState">
+      <console-settings module-name="rrsg_challenge_01" is-module-sdk="true">
+        <option name="myUseModuleSdk" value="true" />
+        <option name="myModuleName" value="rrsg_challenge_01" />
+      </console-settings>
+    </option>
+    <option name="myShowVariablesByDefault" value="false" />
+  </component>
+  <component name="RunManager">
+    <configuration name="recon" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="rrsg_challenge_01" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/python/rrsg_cgreco" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/python/rrsg_cgreco/recon.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.recon" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="ac54a33a-4b6a-46e3-8fa9-a807c1a0c46d" name="Default Changelist" comment="" />
+      <created>1559652298331</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1559652298331</updated>
+      <workItem from="1559652299649" duration="2067000" />
+      <workItem from="1582021811026" duration="5201000" />
+      <workItem from="1582101194573" duration="5239000" />
+      <workItem from="1582118553015" duration="660000" />
+      <workItem from="1582276416522" duration="13216000" />
+      <workItem from="1582525274968" duration="58000" />
+      <workItem from="1582528560060" duration="2078000" />
+      <workItem from="1582544646387" duration="10349000" />
+      <workItem from="1582555853213" duration="1031000" />
+      <workItem from="1582609909934" duration="726000" />
+      <workItem from="1582612928656" duration="891000" />
+      <workItem from="1582625254573" duration="8981000" />
+      <workItem from="1582811842700" duration="808000" />
+      <workItem from="1582875902842" duration="18247000" />
+      <workItem from="1591709532140" duration="447000" />
+      <workItem from="1591709982782" duration="3706000" />
+      <workItem from="1592216978224" duration="705000" />
+      <workItem from="1592556264428" duration="1328000" />
+      <workItem from="1597228729779" duration="542000" />
+      <workItem from="1597766443912" duration="607000" />
+      <workItem from="1597768952767" duration="8000" />
+      <workItem from="1599050652482" duration="627000" />
+      <workItem from="1599053742639" duration="634000" />
+      <workItem from="1599056715590" duration="959000" />
+      <workItem from="1599067251818" duration="1252000" />
+      <workItem from="1599653375868" duration="1141000" />
+      <workItem from="1599808296043" duration="805000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="oldMeFiltersMigrated" value="true" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="771" y="310" width="424" height="484" key="FileChooserDialogImpl" timestamp="1591710116743">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state x="771" y="310" width="424" height="484" key="FileChooserDialogImpl/67.27.1853.1053@67.27.1853.1053" timestamp="1591710116743" />
+    <state width="1807" height="281" key="GridCell.Tab.0.bottom" timestamp="1599816604261">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state width="1807" height="281" key="GridCell.Tab.0.bottom/67.27.1853.1053@67.27.1853.1053" timestamp="1599816604261" />
+    <state width="1807" height="281" key="GridCell.Tab.0.center" timestamp="1599816604260">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state width="1807" height="281" key="GridCell.Tab.0.center/67.27.1853.1053@67.27.1853.1053" timestamp="1599816604260" />
+    <state width="1807" height="281" key="GridCell.Tab.0.left" timestamp="1599816604260">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state width="1807" height="281" key="GridCell.Tab.0.left/67.27.1853.1053@67.27.1853.1053" timestamp="1599816604259" />
+    <state width="1807" height="281" key="GridCell.Tab.0.right" timestamp="1599816604261">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state width="1807" height="281" key="GridCell.Tab.0.right/67.27.1853.1053@67.27.1853.1053" timestamp="1599816604261" />
+    <state x="482" y="187" key="SettingsEditor" timestamp="1591710742662">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state x="482" y="187" key="SettingsEditor/67.27.1853.1053@67.27.1853.1053" timestamp="1591710742662" />
+    <state x="684" y="291" width="847" height="522" key="find.popup" timestamp="1599816767766">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state x="684" y="291" width="847" height="522" key="find.popup/67.27.1853.1053@67.27.1853.1053" timestamp="1599816767766" />
+    <state x="718" y="384" width="540" height="337" key="vcs.readOnlyHandler.ReadOnlyStatusDialog" timestamp="1591709998993">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state x="718" y="384" width="540" height="337" key="vcs.readOnlyHandler.ReadOnlyStatusDialog/67.27.1853.1053@67.27.1853.1053" timestamp="1591709998993" />
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/rrsg_challenge_01$recon.coverage" NAME="recon Coverage Results" MODIFIED="1582290716241" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/python/rrsg_cgreco" />
+  </component>
+</project>

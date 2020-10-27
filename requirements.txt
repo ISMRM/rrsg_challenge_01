@@ -1,0 +1,9 @@
+unittest2
+cython
+numpy
+h5py
+mako
+matplotlib
+pyfftw
+scikit-image
+scipy

@@ -1,0 +1,13 @@
+[Data]
+precision = double
+do_intensity_scale = 1
+do_density_correction = 1
+
+[FFT]
+kernelwidth = 5
+kernellength = 10000
+
+[Optimizer]
+tolerance = 0
+lambda = 0
+max_iter = 10
